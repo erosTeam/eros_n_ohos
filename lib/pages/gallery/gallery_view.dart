@@ -177,7 +177,7 @@ class GalleryPageBody extends HookConsumerWidget {
             onPressed: () {
               final shareText = 'title:${title.englishTitle}\n$url';
               logger.d(shareText);
-              SharePlus.instance.share(ShareParams(text: shareText));
+              Share.share(shareText);
             },
           ),
           IconButton(icon: const Icon(Icons.more_vert), onPressed: () {}),
@@ -1292,9 +1292,7 @@ class ToolBarView extends HookConsumerWidget {
                         return savePath;
                       },
                     );
-                    SharePlus.instance.share(
-                      ShareParams(files: [XFile(savePath)]),
-                    );
+                    Share.shareXFiles([XFile(savePath)]);
                   }
                 : null,
           ),

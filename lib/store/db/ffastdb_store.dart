@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:eros_n/component/models/tag.dart';
 import 'package:eros_n/store/db/db_store.dart';
 import 'package:eros_n/store/db/entity/gallery_history.dart';
@@ -8,19 +6,35 @@ import 'package:eros_n/store/db/entity/tag_translate.dart';
 import 'package:eros_n/utils/eros_utils.dart';
 import 'package:eros_n/utils/logger.dart';
 import 'package:ffastdb/ffastdb.dart';
+import 'package:ffastdb/src/storage/io/io_storage_strategy.dart';
 import 'package:path_provider/path_provider.dart';
 
-/// ffastdb-backed implementation of DbStore for HarmonyOS.
-/// Replaces ObjectBoxHelper which relies on native C++ and cannot run on OHOS.
+/// ffastdb-backed DbStore for HarmonyOS.
+/// Uses three separate FastDB instances (one per entity type) since ffastdb 0.0.1
+/// has no multi-collection support.
 class FfastDbStore implements DbStore {
-  late FastDB _db;
+  late FastDB _historyDb;
+  late FastDB _tagTranslateDb;
+  late FastDB _nhTagDb;
 
   @override
   Future<void> init({String? path}) async {
     final dir = path ?? await _resolveDbPath();
-    final dbFile = '$dir/eros_n.db';
-    _db = FastDB(IoStorageStrategy(dbFile));
-    await _db.open();
+
+    _historyDb = FastDB(IoStorageStrategy('$dir/gallery_history.db'));
+    _historyDb.addIndex('gid');
+    await _historyDb.open();
+
+    _tagTranslateDb = FastDB(IoStorageStrategy('$dir/tag_translate.db'));
+    _tagTranslateDb.addIndex('name');
+    _tagTranslateDb.addIndex('namespace');
+    await _tagTranslateDb.open();
+
+    _nhTagDb = FastDB(IoStorageStrategy('$dir/nh_tag.db'));
+    _nhTagDb.addIndex('id');
+    _nhTagDb.addIndex('name');
+    _nhTagDb.addIndex('translateName');
+    await _nhTagDb.open();
   }
 
   Future<String> _resolveDbPath() async {
@@ -28,32 +42,33 @@ class FfastDbStore implements DbStore {
       final dir = await getApplicationSupportDirectory();
       return dir.path;
     } catch (_) {
-      // Fallback for HarmonyOS if path_provider_harmonyos is not yet wired.
+      // Fallback hardcoded path for HarmonyOS when path_provider isn't wired.
       return '/data/storage/el2/base/haps/entry/files';
     }
   }
 
   @override
-  void close() => _db.close();
+  void close() {
+    _historyDb.close();
+    _tagTranslateDb.close();
+    _nhTagDb.close();
+  }
 
   // ---------------------------------------------------------------------------
-  // GalleryHistory
+  // GalleryHistory — use gid as integer primary key via put()
   // ---------------------------------------------------------------------------
-
-  static const _historyCol = 'gallery_history';
 
   @override
   List<GalleryHistory> getAllHistory() {
-    // ffastdb is async; callers expecting sync results get a snapshot from cache.
-    // This is a temporary shim — sync callers should be migrated to async over time.
-    throw UnimplementedError(
-      'getAllHistory: use getAllHistoryAsync on HarmonyOS',
-    );
+    // Sync not supported — callers should migrate to getAllHistoryAsync().
+    // Returns empty list to avoid crashes on HarmonyOS.
+    return [];
   }
 
   Future<List<GalleryHistory>> getAllHistoryAsync() async {
-    final all = await _db.getAll(collection: _historyCol);
-    return all
+    final all = await _historyDb.getAll();
+    return (all as List)
+        .cast<Map<String, dynamic>>()
         .map(_mapToHistory)
         .toList()
       ..sort((a, b) => (b.lastReadTime ?? 0).compareTo(a.lastReadTime ?? 0));
@@ -61,42 +76,27 @@ class FfastDbStore implements DbStore {
 
   @override
   Future<void> addHistory(GalleryHistory h) async {
-    final existing = await _db.query(collection: _historyCol)
-        .where('gid').equals(h.gid)
-        .find();
-    final doc = _historyToMap(h);
-    if (existing.isNotEmpty) {
-      await _db.update(existing.first['_id'] as String, doc,
-          collection: _historyCol);
-    } else {
-      await _db.insert(doc, collection: _historyCol);
-    }
+    await _historyDb.put(h.gid, _historyToMap(h));
   }
 
   @override
   Future<void> removeHistory(int? gid) async {
     if (gid == null) return;
-    final existing = await _db.query(collection: _historyCol)
-        .where('gid').equals(gid)
-        .find();
-    for (final doc in existing) {
-      await _db.delete(doc['_id'] as String, collection: _historyCol);
-    }
+    await _historyDb.delete(gid);
   }
 
   @override
   Future<void> clearHistory() async {
-    final all = await _db.getAll(collection: _historyCol);
-    for (final doc in all) {
-      await _db.delete(doc['_id'] as String, collection: _historyCol);
+    final all = await _historyDb.getAll();
+    for (final doc in (all as List).cast<Map<String, dynamic>>()) {
+      final gid = (doc['gid'] as num?)?.toInt();
+      if (gid != null) await _historyDb.delete(gid);
     }
   }
 
   // ---------------------------------------------------------------------------
-  // TagTranslate
+  // TagTranslate — use auto-assigned int ID, upsert by (name, namespace)
   // ---------------------------------------------------------------------------
-
-  static const _tagTranslateCol = 'tag_translate';
 
   @override
   Future<void> putAllTagTranslate(List<TagTranslate> tagTranslates) async {
@@ -107,38 +107,46 @@ class FfastDbStore implements DbStore {
 
   @override
   Future<void> putTagTranslate(TagTranslate t) async {
-    final existing = await _db.query(collection: _tagTranslateCol)
-        .where('name').equals(t.name)
-        .and('namespace').equals(t.namespace)
-        .find();
+    final existing = await _tagTranslateDb.find(
+      (q) => q.where('name').equals(t.name).and('namespace').equals(t.namespace).findIds(),
+    );
     final doc = _tagTranslateToMap(t);
     if (existing.isNotEmpty) {
-      await _db.update(existing.first['_id'] as String, doc,
-          collection: _tagTranslateCol);
-    } else {
-      await _db.insert(doc, collection: _tagTranslateCol);
+      // Get the internal ID from the stored doc to update
+      final stored = existing.first as Map<String, dynamic>;
+      final intId = stored['_ffdb_id'] as int?;
+      if (intId != null) {
+        await _tagTranslateDb.update(intId, doc);
+        return;
+      }
     }
+    await _tagTranslateDb.insert(doc);
   }
 
   @override
   Future<void> deleteAllTagTranslate() async {
-    final all = await _db.getAll(collection: _tagTranslateCol);
-    for (final doc in all) {
-      await _db.delete(doc['_id'] as String, collection: _tagTranslateCol);
+    final all = await _tagTranslateDb.getAll();
+    for (final doc in (all as List).cast<Map<String, dynamic>>()) {
+      final id = doc['_ffdb_id'] as int?;
+      if (id != null) await _tagTranslateDb.delete(id);
     }
   }
 
   @override
   Future<List<String>> findAllTagNamespace() async {
-    final all = await _db.getAll(collection: _tagTranslateCol);
-    return all.map((d) => d['namespace'] as String).toSet().toList();
+    final all = await _tagTranslateDb.getAll();
+    return (all as List)
+        .cast<Map<String, dynamic>>()
+        .map((d) => d['namespace'] as String)
+        .toSet()
+        .toList();
   }
 
   @override
   TagTranslate? findTagTranslate(String name, {String? namespace}) {
-    throw UnimplementedError(
-      'findTagTranslate: use findTagTranslateAsync on HarmonyOS',
-    );
+    // Sync not supported on HarmonyOS — returns null (tags won't be translated
+    // during parsing). Use findTagTranslateAsync() where async is possible.
+    return null;
   }
 
   @override
@@ -149,14 +157,21 @@ class FfastDbStore implements DbStore {
     if (name.contains('|')) {
       name = name.split('|').first.trim();
     }
-    var q = _db.query(collection: _tagTranslateCol).where('name').equals(name);
-    if (namespace != null && namespace.isNotEmpty) {
-      q = q.and('namespace').equals(namespace);
-    } else {
-      q = q.and('namespace').notEquals('rows');
-    }
-    final results = await q.find();
-    return results.isEmpty ? null : _mapToTagTranslate(results.last);
+    final results = await _tagTranslateDb.find((q) {
+      var builder = q.where('name').equals(name);
+      if (namespace != null && namespace.isNotEmpty) {
+        builder = builder.and('namespace').equals(namespace);
+      }
+      return builder.findIds();
+    });
+    final filtered = (results as List)
+        .cast<Map<String, dynamic>>()
+        .where((d) =>
+            namespace == null ||
+            namespace.isEmpty ||
+            d['namespace'] != 'rows')
+        .toList();
+    return filtered.isEmpty ? null : _mapToTagTranslate(filtered.last);
   }
 
   @override
@@ -164,9 +179,10 @@ class FfastDbStore implements DbStore {
     String text,
     int limit,
   ) async {
-    final all = await _db.getAll(collection: _tagTranslateCol);
+    final all = await _tagTranslateDb.getAll();
     final lower = text.toLowerCase();
-    final results = all
+    final results = (all as List)
+        .cast<Map<String, dynamic>>()
         .where((d) =>
             d['namespace'] != 'rows' &&
             ((d['name'] as String?)?.toLowerCase().contains(lower) == true ||
@@ -182,10 +198,8 @@ class FfastDbStore implements DbStore {
   }
 
   // ---------------------------------------------------------------------------
-  // NhTag
+  // NhTag — use nhTag.id as integer primary key via put()
   // ---------------------------------------------------------------------------
-
-  static const _nhTagCol = 'nh_tag';
 
   @override
   Future<void> putAllNhTag(List<NhTag> tags) async {
@@ -196,43 +210,35 @@ class FfastDbStore implements DbStore {
 
   @override
   Future<void> putNhTag(NhTag tag) async {
-    final existing = await _db.query(collection: _nhTagCol)
-        .where('id').equals(tag.id)
-        .find();
-    final doc = _nhTagToMap(tag);
-    if (existing.isNotEmpty) {
-      await _db.update(existing.first['_id'] as String, doc,
-          collection: _nhTagCol);
-    } else {
-      await _db.insert(doc, collection: _nhTagCol);
-    }
+    await _nhTagDb.put(tag.id, _nhTagToMap(tag));
   }
 
   @override
   NhTag? findNhTag(int? id) {
-    throw UnimplementedError('findNhTag: use findNhTagAsync on HarmonyOS');
+    // Sync not supported — returns null on HarmonyOS.
+    return null;
   }
 
   @override
   Future<NhTag?> findNhTagAsync(int? id) async {
     if (id == null) return null;
-    final results = await _db.query(collection: _nhTagCol)
-        .where('id').equals(id)
-        .find();
-    return results.isEmpty ? null : _mapToNhTag(results.first);
+    final doc = await _nhTagDb.findById(id);
+    if (doc == null) return null;
+    return _mapToNhTag(doc as Map<String, dynamic>);
   }
 
   @override
   Future<List<NhTag>> getAllNhTag() async {
-    final all = await _db.getAll(collection: _nhTagCol);
-    return all.map(_mapToNhTag).toList();
+    final all = await _nhTagDb.getAll();
+    return (all as List).cast<Map<String, dynamic>>().map(_mapToNhTag).toList();
   }
 
   @override
   Future<List<NhTag>> findNhTagContains(String text, int limit) async {
-    final all = await _db.getAll(collection: _nhTagCol);
+    final all = await _nhTagDb.getAll();
     final lower = text.toLowerCase();
-    final results = all
+    final results = (all as List)
+        .cast<Map<String, dynamic>>()
         .where((d) =>
             (d['name'] as String?)?.toLowerCase().contains(lower) == true ||
             (d['translateName'] as String?)?.toLowerCase().contains(lower) ==
@@ -246,14 +252,11 @@ class FfastDbStore implements DbStore {
 
   @override
   Future<void> updateNhTagTime(int nhTagId) async {
-    final existing = await _db.query(collection: _nhTagCol)
-        .where('id').equals(nhTagId)
-        .find();
-    if (existing.isEmpty) return;
-    final doc = Map<String, dynamic>.from(existing.first)
+    final doc = await _nhTagDb.findById(nhTagId);
+    if (doc == null) return;
+    final updated = Map<String, dynamic>.from(doc as Map)
       ..['lastUseTime'] = DateTime.now().millisecondsSinceEpoch;
-    await _db.update(existing.first['_id'] as String, doc,
-        collection: _nhTagCol);
+    await _nhTagDb.put(nhTagId, updated);
   }
 
   @override
@@ -282,8 +285,8 @@ class FfastDbStore implements DbStore {
       }
       if ((translateName == null || translateName.isEmpty) && type != null) {
         final ns = (type == 'tag' || type == 'category') ? null : type;
-        translateName = (await findTagTranslateAsync(name, namespace: ns))
-            ?.translateNameNotMD;
+        translateName =
+            (await findTagTranslateAsync(name, namespace: ns))?.translateNameNotMD;
         if (i % 4 == 3) await Future<void>.delayed(Duration.zero);
       }
 
@@ -315,7 +318,8 @@ class FfastDbStore implements DbStore {
         'lastReadTime': h.lastReadTime,
       };
 
-  static GalleryHistory _mapToHistory(Map<String, dynamic> d) => GalleryHistory(
+  static GalleryHistory _mapToHistory(Map<String, dynamic> d) =>
+      GalleryHistory(
         gid: (d['gid'] as num).toInt(),
         mediaId: d['mediaId'] as String?,
         csrfToken: d['csrfToken'] as String?,

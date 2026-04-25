@@ -11,7 +11,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 from pathlib import Path
 
 # ── 配置 ──────────────────────────────────────────────────────────────────────
-PROJ        = Path("/home/gamer/git/ffastdb_ohos_demo")
+PROJ        = Path(__file__).resolve().parent.parent   # eros_n_ohos root
 SIGN_DIR    = PROJ / "ohos/sign"
 TOOL_LIB    = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/lib")
 HAP_SIGN    = TOOL_LIB / "hap-sign-tool.jar"
@@ -23,9 +23,9 @@ AUTH_FILE   = Path.home() / "Documents/hap_installer/userInfo.json"
 CERT_FILE   = SIGN_DIR / "xiaobai-debug.cer"
 PROFILE_FILE = SIGN_DIR / "xiaobai-debug.p7b"
 
-KS_FILE     = PROJ / "ohos/sign/debug.p12"  # 如工具的 xiaobai.p12 更改为此处
-KS_ALIAS    = "debug-app-key"
-KS_PWD      = "Test@12345"
+KS_FILE     = SIGN_DIR / "xiaobai.p12"
+KS_ALIAS    = "key0"
+KS_PWD      = "123456Abc"
 
 BUNDLE_NAME = "com.erosteam.erosn"
 CERT_NAME   = "xiaobai-debug"
