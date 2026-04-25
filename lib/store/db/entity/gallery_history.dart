@@ -1,6 +1,3 @@
-import 'package:objectbox/objectbox.dart';
-
-@Entity()
 class GalleryHistory {
   GalleryHistory({
     this.gid = 0,
@@ -14,9 +11,8 @@ class GalleryHistory {
     this.coverImgWidth,
     this.lastReadTime,
   });
-  @Id(assignable: true)
-  int gid;
 
+  int gid;
   String? mediaId;
   String? csrfToken;
   String? title;
@@ -25,7 +21,5 @@ class GalleryHistory {
   String? thumbUrl;
   int? coverImgHeight;
   int? coverImgWidth;
-
-  @Index()
   int? lastReadTime;
 }

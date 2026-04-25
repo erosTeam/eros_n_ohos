@@ -1,10 +1,8 @@
 import 'package:copy_with_extension/copy_with_extension.dart';
-import 'package:objectbox/objectbox.dart';
 
 part 'tag_translate.g.dart';
 
 @CopyWith()
-@Entity()
 class TagTranslate {
   TagTranslate({
     required this.namespace,
@@ -16,21 +14,12 @@ class TagTranslate {
     this.id = 0,
   });
 
-  @Id()
   int id;
-
-  @Index()
   final String namespace;
-
-  @Index()
   final String name;
-
-  @Index()
   final String? translateName;
   final String? intro;
   final String? links;
-
-  @Index()
   final int lastUseTime;
 
   /// Matches a Markdown image reference like `![alt](https://...)`.
@@ -39,7 +28,6 @@ class TagTranslate {
   /// the textual part to render in the UI.
   static final _markdownImageReg = RegExp(r'!\[[^\]]*\]\([^)]*\)');
 
-  @Transient()
   String? get translateNameNotMD {
     final raw = translateName;
     if (raw == null) {

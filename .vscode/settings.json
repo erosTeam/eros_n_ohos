@@ -1,4 +1,4 @@
 {
-  "dart.flutterSdkPath": ".fvm/versions/stable",
+  "dart.flutterSdkPath": ".fvm/versions/ohos/oh-3.35.7-release",
   "java.configuration.updateBuildConfiguration": "interactive"
 }
