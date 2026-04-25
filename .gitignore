@@ -54,3 +54,6 @@ GPUCache/
 
 # Agent-only working notes
 docs/AGENT_PROGRESS.md
+# HarmonyOS signing artifacts (auto-generated, contain device-bound credentials)
+ohos/sign/*.cer
+ohos/sign/*.p7b
