@@ -58,20 +58,18 @@ class Global {
   static late PackageInfo packageInfo;
 
   static Future<void> init() async {
-    // SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
-    //   systemNavigationBarColor: Colors.transparent,
-    //   systemNavigationBarDividerColor: Colors.transparent,
-    //   statusBarColor: Colors.transparent,
-    //   systemNavigationBarContrastEnforced: false,
-    // ));
+    try {
+      appSupportPath = (await getApplicationSupportDirectory()).path;
+      appDocPath = (await getApplicationDocumentsDirectory()).path;
+      tempPath = (await getTemporaryDirectory()).path;
+    } catch (e) {
+      debugPrint('[Global] path_provider failed: $e, using fallback paths');
+      const base = '/data/storage/el2/base/haps/entry/files';
+      appSupportPath = base;
+      appDocPath = base;
+      tempPath = base;
+    }
 
-    // SystemChrome.setEnabledSystemUIMode(
-    //   SystemUiMode.edgeToEdge,
-    // );
-
-    appSupportPath = (await getApplicationSupportDirectory()).path;
-    appDocPath = (await getApplicationDocumentsDirectory()).path;
-    tempPath = (await getTemporaryDirectory()).path;
     extStorePath = Platform.isAndroid || Platform.isFuchsia
         ? (await getExternalStorageDirectory())?.path ?? ''
         : '';
@@ -108,10 +106,27 @@ class Global {
       }
     }
 
-    packageInfo = await PackageInfo.fromPlatform();
+    packageInfo = await PackageInfo.fromPlatform().catchError((e) {
+      debugPrint('[Global] PackageInfo.fromPlatform failed: $e');
+      return PackageInfo(
+        appName: 'eros N',
+        packageName: 'com.erosteam.erosn',
+        version: '0.0.0',
+        buildNumber: '0',
+      );
+    });
 
-    await HiveHelper.init();
-    await objectBoxHelper.init();
+    try {
+      await HiveHelper.init();
+    } catch (e) {
+      debugPrint('[Global] HiveHelper.init failed: $e');
+    }
+
+    try {
+      await objectBoxHelper.init();
+    } catch (e) {
+      debugPrint('[Global] objectBoxHelper.init failed: $e');
+    }
 
     userAgent = hiveHelper.getUserAgent();
     userAgent ??= NHConst.userAgent;

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:eros_n/utils/dev_logger.dart' as devlog;
 import 'package:auto_route/auto_route.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:eros_n/common/global.dart';
@@ -23,6 +24,8 @@ import 'package:window_manager/window_manager.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  await devlog.initDevLogger();
+
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
   }
@@ -32,7 +35,12 @@ Future<void> main() async {
     await InAppWebViewController.setWebContentsDebuggingEnabled(true);
   }
 
-  await Global.init();
+  try {
+    await Global.init();
+  } catch (e, st) {
+    debugPrint('[main] Global.init failed: $e\n$st');
+    devlog.log('Global.init failed: $e\n$st', name: 'main');
+  }
 
   initLogger();
   runApp(
@@ -185,8 +193,14 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                 }
                 return child;
               },
-              builder: (context, child) =>
-                  HiddenWebViewProxyHost(child: child ?? const SizedBox()),
+              builder: (context, child) {
+                // flutter_inappwebview has no HarmonyOS implementation;
+                // skip the hidden webview proxy on ohos to avoid white screen.
+                if (defaultTargetPlatform == TargetPlatform.ohos) {
+                  return child ?? const SizedBox();
+                }
+                return HiddenWebViewProxyHost(child: child ?? const SizedBox());
+              },
             ),
           ),
           // builder: (BuildContext context, Widget? child) {

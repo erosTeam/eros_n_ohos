@@ -25,9 +25,9 @@ case "$1" in
     echo "    log file: $LOG_HOST"
     LAST=0
     while true; do
-      OUT=$("$HDC" shell "wc -c < $LOG_HOST 2>/dev/null || echo 0" | tr -d '[:space:]')
-      if [ -n "$OUT" ] && [ "$OUT" -gt "$LAST" ]; then
-        "$HDC" shell "dd if=$LOG_HOST bs=1 skip=$LAST 2>/dev/null"
+      OUT=$("$HDC" shell "stat -c %s $LOG_HOST 2>/dev/null || echo 0" | tr -d '[:space:]\r')
+      if [[ "$OUT" =~ ^[0-9]+$ ]] && [ "$OUT" -gt "$LAST" ]; then
+        "$HDC" shell "dd if=$LOG_HOST bs=1 skip=$LAST count=$((OUT - LAST)) 2>/dev/null"
         LAST=$OUT
       fi
       sleep 0.5

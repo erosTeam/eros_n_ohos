@@ -70,8 +70,9 @@ class CallbackHandler(BaseHTTPRequestHandler):
             length = int(self.headers.get("Content-Length", 0))
             body = self.rfile.read(length).decode()
             self.send_response(200)
+            self.send_header("Content-Type", "text/html; charset=utf-8")
             self.end_headers()
-            self.wfile.write("登录成功！请返回！".encode())
+            self.wfile.write("登录成功！请返回！".encode("utf-8"))
             CallbackHandler.result = body
         else:
             self.send_response(404); self.end_headers()
@@ -306,7 +307,7 @@ def main():
     sign_and_install()
 
     print("\n==> 完成！在设备上打开 App，然后运行:")
-    print("    cd /home/gamer/git/ffastdb_ohos_demo && fvm flutter attach")
+    print(f"    cd {PROJ} && fvm flutter attach")
 
 if __name__ == "__main__":
     main()
