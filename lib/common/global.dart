@@ -122,11 +122,11 @@ class Global {
       debugPrint('[Global] HiveHelper.init failed: $e');
     }
 
-    try {
-      await objectBoxHelper.init();
-    } catch (e) {
+    // objectBoxHelper.init() opens ffastdb files and is slow on HarmonyOS.
+    // Fire-and-forget so the UI can appear immediately.
+    objectBoxHelper.init().catchError((Object e) {
       debugPrint('[Global] objectBoxHelper.init failed: $e');
-    }
+    });
 
     userAgent = hiveHelper.getUserAgent();
     userAgent ??= NHConst.userAgent;

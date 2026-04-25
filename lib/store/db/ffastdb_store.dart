@@ -16,6 +16,9 @@ class FfastDbStore implements DbStore {
   late FastDB _historyDb;
   late FastDB _tagTranslateDb;
   late FastDB _nhTagDb;
+  bool _isInitialized = false;
+
+  bool get isInitialized => _isInitialized;
 
   @override
   Future<void> init({String? path}) async {
@@ -35,6 +38,8 @@ class FfastDbStore implements DbStore {
     _nhTagDb.addIndex('name');
     _nhTagDb.addIndex('translateName');
     await _nhTagDb.open();
+
+    _isInitialized = true;
   }
 
   Future<String> _resolveDbPath() async {
@@ -179,6 +184,7 @@ class FfastDbStore implements DbStore {
     String text,
     int limit,
   ) async {
+    if (!_isInitialized) return const [];
     final all = await _tagTranslateDb.getAll();
     final lower = text.toLowerCase();
     final results = (all as List)
@@ -210,6 +216,7 @@ class FfastDbStore implements DbStore {
 
   @override
   Future<void> putNhTag(NhTag tag) async {
+    if (!_isInitialized) return;
     await _nhTagDb.put(tag.id, _nhTagToMap(tag));
   }
 
@@ -235,6 +242,7 @@ class FfastDbStore implements DbStore {
 
   @override
   Future<List<NhTag>> findNhTagContains(String text, int limit) async {
+    if (!_isInitialized) return const [];
     final all = await _nhTagDb.getAll();
     final lower = text.toLowerCase();
     final results = (all as List)
@@ -261,6 +269,7 @@ class FfastDbStore implements DbStore {
 
   @override
   Future<void> learnNhTags(List<Tag> tags) async {
+    if (!_isInitialized) return;
     if (tags.isEmpty) return;
     final candidates = tags
         .where((t) => t.id != null && t.id != 0 && (t.name ?? '').isNotEmpty)
