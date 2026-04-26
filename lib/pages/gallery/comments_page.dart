@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:eros_n/common/const/const.dart';
+import 'package:eros_n/component/widget/adaptive_app_bar.dart';
 import 'package:eros_n/component/models/comment.dart';
 import 'package:eros_n/component/widget/eros_cached_network_image.dart';
 import 'package:eros_n/generated/l10n.dart';
@@ -52,93 +53,104 @@ class CommentsPage extends HookConsumerWidget {
       data: Theme.of(context).copyWith(colorScheme: colorScheme),
       child: Builder(
         builder: (context) {
+          final glass = isLiquidGlass(ref);
           return Scaffold(
-            appBar: AppBar(title: const Text('评论')),
-            body: Column(
-              children: [
-                Expanded(child: CommentsListView(comments: comments)),
-                Container(
-                  color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                  padding: EdgeInsets.only(
-                    left: max(16, context.mediaQueryPadding.left),
-                    right: max(8, context.mediaQueryPadding.right),
-                    bottom: context.mediaQueryPadding.bottom,
-                  ),
-                  child: StatefulBuilder(
-                    builder: (context, setState) {
-                      return Row(
-                        children: [
-                          Expanded(
-                            child: TextField(
-                              enabled: !isSending,
-                              controller:
-                                  galleryNotifier.commentEditingController,
-                              decoration: InputDecoration(
-                                border: InputBorder.none,
-                                errorText: errorText,
-                                errorMaxLines: 10,
-                                // border: OutlineInputBorder(),
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 4,
-                                  vertical: 8,
+            extendBodyBehindAppBar: glass,
+            appBar: adaptiveAppBar(
+              context: context,
+              ref: ref,
+              title: const Text('评论'),
+            ),
+            body: Padding(
+              padding: glass ? glassBodyPadding(context) : EdgeInsets.zero,
+              child: Column(
+                children: [
+                  Expanded(child: CommentsListView(comments: comments)),
+                  Container(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.surfaceContainerHighest,
+                    padding: EdgeInsets.only(
+                      left: max(16, context.mediaQueryPadding.left),
+                      right: max(8, context.mediaQueryPadding.right),
+                      bottom: context.mediaQueryPadding.bottom,
+                    ),
+                    child: StatefulBuilder(
+                      builder: (context, setState) {
+                        return Row(
+                          children: [
+                            Expanded(
+                              child: TextField(
+                                enabled: !isSending,
+                                controller:
+                                    galleryNotifier.commentEditingController,
+                                decoration: InputDecoration(
+                                  border: InputBorder.none,
+                                  errorText: errorText,
+                                  errorMaxLines: 10,
+                                  // border: OutlineInputBorder(),
+                                  contentPadding: const EdgeInsets.symmetric(
+                                    horizontal: 4,
+                                    vertical: 8,
+                                  ),
                                 ),
+                                maxLines: null,
+                                onChanged: (value) {
+                                  setState(() {
+                                    errorText = null;
+                                  });
+                                },
                               ),
-                              maxLines: null,
-                              onChanged: (value) {
-                                setState(() {
-                                  errorText = null;
-                                });
-                              },
                             ),
-                          ),
-                          IconButton(
-                            onPressed: isSending
-                                ? null
-                                : () async {
-                                    if (galleryNotifier
-                                            .commentEditingController
-                                            .text
-                                            .trim()
-                                            .length >
-                                        10) {
-                                      try {
+                            IconButton(
+                              onPressed: isSending
+                                  ? null
+                                  : () async {
+                                      if (galleryNotifier
+                                              .commentEditingController
+                                              .text
+                                              .trim()
+                                              .length >
+                                          10) {
+                                        try {
+                                          setState(() {
+                                            isSending = true;
+                                          });
+                                          await galleryNotifier.comment();
+                                        } on HttpException catch (e) {
+                                          logger.e(
+                                            '${e.runtimeType} ${e.message}',
+                                          );
+                                          setState(() {
+                                            errorText = e.message;
+                                          });
+                                        } finally {
+                                          setState(() {
+                                            isSending = false;
+                                          });
+                                        }
+                                      } else {
                                         setState(() {
-                                          isSending = true;
-                                        });
-                                        await galleryNotifier.comment();
-                                      } on HttpException catch (e) {
-                                        logger.e(
-                                          '${e.runtimeType} ${e.message}',
-                                        );
-                                        setState(() {
-                                          errorText = e.message;
-                                        });
-                                      } finally {
-                                        setState(() {
-                                          isSending = false;
+                                          errorText = L10n.of(
+                                            context,
+                                          ).comment_length_error;
                                         });
                                       }
-                                    } else {
-                                      setState(() {
-                                        errorText = L10n.of(
-                                          context,
-                                        ).comment_length_error;
-                                      });
-                                    }
-                                  },
-                            icon: Icon(
-                              isSending ? Icons.send : Icons.send_outlined,
-                              color: Theme.of(
-                                context,
-                              ).colorScheme.onSurfaceVariant,
+                                    },
+                              icon: Icon(
+                                isSending ? Icons.send : Icons.send_outlined,
+                                color: Theme.of(
+                                  context,
+                                ).colorScheme.onSurfaceVariant,
+                              ),
                             ),
-                          ),
-                        ],
-                      );
-                    },
+                          ],
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
         },

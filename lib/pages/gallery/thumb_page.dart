@@ -1,6 +1,7 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:collection/collection.dart';
 import 'package:eros_n/common/const/const.dart';
+import 'package:eros_n/component/widget/adaptive_app_bar.dart';
 import 'package:eros_n/component/models/image.dart';
 import 'package:eros_n/component/widget/eros_cached_network_image.dart';
 import 'package:eros_n/component/widget/scrolling_fab.dart';
@@ -28,8 +29,14 @@ class ThumbPage extends HookConsumerWidget {
       data: Theme.of(context).copyWith(colorScheme: colorScheme),
       child: Builder(
         builder: (context) {
+          final glass = isLiquidGlass(ref);
           return Scaffold(
-            appBar: AppBar(title: Text(L10n.of(context).thumbs)),
+            extendBodyBehindAppBar: glass,
+            appBar: adaptiveAppBar(
+              context: context,
+              ref: ref,
+              title: Text(L10n.of(context).thumbs),
+            ),
             floatingActionButton: ScrollingFab(
               onPressed: () {
                 RouteUtil.goRead(context, ref);
@@ -129,13 +136,15 @@ class ThumbsView extends HookConsumerWidget {
           // like `2t.jpg.webp`); fall back to a synthesized URL when only
           // the legacy `type` is available.
           final ext = NHConst.extMap[thumb.type] ?? 'webp';
-          final imageUrl = thumb.imageUrl ??
+          final imageUrl =
+              thumb.imageUrl ??
               'https://t.nhentai.net/galleries/$mediaId/${index + 1}t.$ext';
           final aspect =
-              (thumb.imgWidth != null && thumb.imgHeight != null &&
-                      thumb.imgHeight! > 0)
-                  ? thumb.imgWidth! / thumb.imgHeight!
-                  : 3 / 4;
+              (thumb.imgWidth != null &&
+                  thumb.imgHeight != null &&
+                  thumb.imgHeight! > 0)
+              ? thumb.imgWidth! / thumb.imgHeight!
+              : 3 / 4;
           return GestureDetector(
             onTap: () {
               RouteUtil.goRead(

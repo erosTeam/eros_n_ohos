@@ -15,15 +15,12 @@ import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 
-const _kShowBarGradient = false;
+const _kShowBarGradient = true;
 const _kMaxSliderWidth = 400.0;
 const _kMaxButtonBarWidth = 200.0;
 
 class _BarAlignmentScope extends InheritedWidget {
-  const _BarAlignmentScope({
-    required this.alignment,
-    required super.child,
-  });
+  const _BarAlignmentScope({required this.alignment, required super.child});
 
   final Alignment alignment;
 
@@ -365,7 +362,9 @@ class GlassBottomBarControl extends HookConsumerWidget {
               duration: const Duration(milliseconds: 500),
               curve: Curves.easeOutCubic,
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: _kMaxButtonBarWidth),
+                constraints: const BoxConstraints(
+                  maxWidth: _kMaxButtonBarWidth,
+                ),
                 child: GlassContainer(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 4,
@@ -972,7 +971,6 @@ class _ReadScaffoldState extends ConsumerState<ReadScaffold> {
       ),
     );
   }
-
 }
 
 /// 控制触摸手势事件
