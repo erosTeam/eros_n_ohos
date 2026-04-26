@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:math';
 
+import 'package:eros_n/utils/dev_logger.dart' as devlog;
 import 'package:eros_n/utils/logger/pretty_printer.dart';
 import 'package:logger/logger.dart';
 import 'package:path/path.dart' as path;
@@ -90,6 +91,11 @@ Logger get loggerSimpleOnlyFile =>
 
 final LogOutput _outPut = MultiOutput([
   ConsoleOutput(),
+  // On HarmonyOS Dart stdout is dropped, so funnel everything through the
+  // dev_logger sink (writes to /data/storage/el2/base/haps/entry/files/debug.log)
+  // which can then be streamed via `bash dev.sh --log`. On other platforms
+  // the sink is null and this is a cheap no-op.
+  _OhosDevLogOutput(),
   if (logDirectory != null && logFileName != null)
     _FileOutput(file: File(path.join(logDirectory!, logFileName))),
 ]);
@@ -146,6 +152,15 @@ final Logger loggerForGetx = Logger(
   printer: SimplePrinter(),
   filter: EHLogFilter(),
 );
+
+/// Bridges the `logger` package output to dev_logger's file sink so that
+/// every `logger.d/.t/.w/...` call ends up in the OHOS-readable log file.
+class _OhosDevLogOutput extends LogOutput {
+  @override
+  void output(OutputEvent event) {
+    devlog.writeLines(event.lines, name: event.level.name);
+  }
+}
 
 /// Writes the log output to a file.
 class _FileOutput extends LogOutput {
