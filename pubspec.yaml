@@ -128,6 +128,11 @@ dependency_overrides:
     git:
       url: "https://atomgit.com/openharmony-sig/flutter_sqflite.git"
       path: "sqflite_common"
+  # HarmonyOS-adapted flutter_inappwebview (OpenHarmony SIG).
+  flutter_inappwebview:
+    git:
+      url: "https://gitcode.com/openharmony-sig/flutter_inappwebview.git"
+      path: "flutter_inappwebview"
   # Pinned to last versions supporting Dart <3.10 (flutter-ohos Dart SDK is 3.9.2).
   # Once flutter-ohos upgrades its Dart SDK these overrides can be removed.
   wakelock_plus: ^1.4.0

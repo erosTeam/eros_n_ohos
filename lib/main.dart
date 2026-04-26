@@ -194,11 +194,6 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                 return child;
               },
               builder: (context, child) {
-                // flutter_inappwebview has no HarmonyOS implementation;
-                // skip the hidden webview proxy on ohos to avoid white screen.
-                if (defaultTargetPlatform == TargetPlatform.ohos) {
-                  return child ?? const SizedBox();
-                }
                 return HiddenWebViewProxyHost(child: child ?? const SizedBox());
               },
             ),

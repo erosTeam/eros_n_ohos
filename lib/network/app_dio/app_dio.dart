@@ -115,11 +115,7 @@ class AppDio with DioMixin implements Dio {
     // Route Cloudflare-protected origins through the hidden WebView so the
     // request inherits Chromium's TLS/HTTP fingerprints and is not challenged.
     // Image CDNs and stream downloads are excluded by the interceptor itself.
-    // On HarmonyOS, flutter_inappwebview is unavailable, so let requests go
-    // directly through dart:io and hope Cloudflare doesn't challenge.
-    if (defaultTargetPlatform != TargetPlatform.ohos) {
-      interceptors.add(WebViewProxyInterceptor());
-    }
+    interceptors.add(WebViewProxyInterceptor());
 
     httpClientAdapter = AppHttpAdapter(proxy: dioConfig?.proxy ?? '');
 
