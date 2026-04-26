@@ -9,6 +9,7 @@ import 'package:eros_n/pages/read/read_view.dart';
 import 'package:eros_n/utils/get_utils/get_utils.dart';
 import 'package:eros_n/utils/logger.dart';
 import 'package:flutter/cupertino.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_android_volume_keydown/flutter_android_volume_keydown.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -190,9 +191,7 @@ class ReadNotifier extends _$ReadNotifier {
   }
 
   Future<void> showAppBar() async {
-    // Don't await: SystemChrome.setEnabledSystemUIMode may not resolve on
-    // HarmonyOS, which would hang the function and prevent state updates.
-    unawaited(unFullscreen());
+    await unFullscreen();
     state = state.copyWith(
       showAppBar: true,
       bottomBarOffset: 0,
@@ -215,14 +214,25 @@ class ReadNotifier extends _$ReadNotifier {
     );
     if (fullScreenReader) {
       400.milliseconds.delay(() {
-        SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+        if (defaultTargetPlatform == TargetPlatform.ohos) {
+          SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersive);
+        } else {
+          SystemChrome.setEnabledSystemUIMode(SystemUiMode.immersiveSticky);
+        }
       });
     }
   }
 
   Future<void> unFullscreen() async {
-    await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
-    await 100.milliseconds.delay();
+    if (defaultTargetPlatform == TargetPlatform.ohos) {
+      await SystemChrome.setEnabledSystemUIMode(
+        SystemUiMode.manual,
+        overlays: SystemUiOverlay.values,
+      );
+    } else {
+      await SystemChrome.setEnabledSystemUIMode(SystemUiMode.edgeToEdge);
+      await 100.milliseconds.delay();
+    }
   }
 
   /// Handle scroll position changes for vertical reading mode.
