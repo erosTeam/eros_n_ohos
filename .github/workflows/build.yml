@@ -42,10 +42,23 @@ jobs:
             --target-platform ohos-arm64 \
             --no-codesign
 
+      - name: Rezip HAP (compress .so for smaller distribution)
+        run: |
+          python3 - <<'EOF'
+          import zipfile, os
+          src = "build/ohos/hap/entry-default-unsigned.hap"
+          dst = "build/ohos/hap/entry-default-unsigned-rezip.hap"
+          with zipfile.ZipFile(src, "r") as zin, \
+               zipfile.ZipFile(dst, "w", compression=zipfile.ZIP_DEFLATED, compresslevel=6) as zout:
+              for item in zin.infolist():
+                  zout.writestr(item.filename, zin.read(item.filename))
+          print(f"original: {os.path.getsize(src)//1024//1024} MB -> rezip: {os.path.getsize(dst)//1024//1024} MB")
+          EOF
+
       - name: Collect artifact
         run: |
           dst="Eros-N_${APP_VERSION}_ohos-arm64-unsigned.hap"
-          cp build/ohos/hap/entry-default-unsigned.hap "$dst"
+          cp build/ohos/hap/entry-default-unsigned-rezip.hap "$dst"
           echo "HAP_PATH=$dst" >> "$GITHUB_ENV"
 
       - name: Upload unsigned HAP
