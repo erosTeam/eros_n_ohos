@@ -1,0 +1,91 @@
+name: Build OHOS
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - 'v*'
+  pull_request:
+    branches:
+      - master
+
+concurrency:
+  group: build-ohos-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build_hap:
+    name: Build unsigned HAP
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/niuhuan/harmony-next-flutter-pipeline-docker/image:latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+
+      - name: Get app version
+        shell: bash
+        run: |
+          version=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Flutter pub get
+        run: flutter pub get
+
+      - name: Build unsigned HAP (release, arm64)
+        run: |
+          flutter build hap --release \
+            --target-platform ohos-arm64 \
+            --no-codesign
+
+      - name: Collect artifact
+        run: |
+          dst="Eros-N_${APP_VERSION}_ohos-arm64-unsigned.hap"
+          cp build/ohos/hap/entry-default-unsigned.hap "$dst"
+          echo "HAP_PATH=$dst" >> "$GITHUB_ENV"
+
+      - name: Upload unsigned HAP
+        uses: actions/upload-artifact@v4
+        with:
+          name: ohos-hap-unsigned
+          path: ${{ env.HAP_PATH }}
+          if-no-files-found: error
+          retention-days: 14
+
+  publish:
+    name: Publish to GitHub Release
+    if: startsWith(github.ref, 'refs/tags/')
+    needs: build_hap
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Get app version
+        run: |
+          version=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          echo "APP_VERSION=$version" >> "$GITHUB_ENV"
+
+      - name: Download HAP artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: ohos-hap-unsigned
+          path: /tmp/artifacts
+
+      - name: Upload to GitHub Release
+        uses: ncipollo/release-action@v1
+        with:
+          artifacts: /tmp/artifacts/*.hap
+          tag: ${{ github.ref_name }}
+          bodyFile: changelog/v${{ env.APP_VERSION }}.md
+          prerelease: ${{ contains(github.ref, 'pre') }}
+          allowUpdates: true
+          artifactErrorsFailBuild: true
+          replacesArtifacts: true
