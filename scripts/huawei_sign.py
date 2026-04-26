@@ -17,7 +17,9 @@ TOOL_LIB    = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/open
 HAP_SIGN    = TOOL_LIB / "hap-sign-tool.jar"
 HDC         = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc")
 UNSIGNED_HAP = PROJ / "build/ohos/hap/entry-default-unsigned.hap"
-SIGNED_HAP   = PROJ / "build/ohos/entry-debug-signed.hap"
+
+def _signed_hap(mode: str) -> Path:
+    return PROJ / f"build/ohos/entry-{mode}-signed.hap"
 
 AUTH_FILE   = Path.home() / "Documents/hap_installer/userInfo.json"
 CERT_FILE   = SIGN_DIR / "xiaobai-debug.cer"
@@ -223,8 +225,8 @@ def ensure_profile(auth, cert_id, device_ids):
     print(f"Profile: {PROFILE_FILE.name}")
 
 # ── 签名 & 安装 ───────────────────────────────────────────────────────────────
-def sign_and_install():
-    # 固定用 xiaobai.p12（与 xiaobai.csr 配对）
+def sign_and_install(mode: str):
+    signed_hap = _signed_hap(mode)
     xiaobai_p12 = SIGN_DIR / "xiaobai.p12"
     ks, alias, pwd = str(xiaobai_p12), "xiaobai", "xiaobai123"
 
@@ -242,7 +244,7 @@ def sign_and_install():
         "-keystoreFile",ks,
         "-keystorePwd", pwd,
         "-compatibleVersion", "8",
-        "-outFile",     str(SIGNED_HAP),
+        "-outFile",     str(signed_hap),
     ]
     result = subprocess.run(cmd, capture_output=True, text=True)
     output = result.stdout + result.stderr
@@ -251,7 +253,7 @@ def sign_and_install():
         raise RuntimeError("签名失败")
 
     print("安装 HAP...")
-    result = subprocess.run([str(HDC), "install", str(SIGNED_HAP)], capture_output=True, text=True)
+    result = subprocess.run([str(HDC), "install", str(signed_hap)], capture_output=True, text=True)
     print(result.stdout + result.stderr)
 
 # ── 获取设备 UDID ───────────────────────────────────────────────────────────────
@@ -270,10 +272,17 @@ def main():
     no_build = "--no-build" in sys.argv
     force_profile = "--force-profile" in sys.argv
 
+    if "--release" in sys.argv:
+        mode = "release"
+    elif "--profile" in sys.argv:
+        mode = "profile"
+    else:
+        mode = "debug"
+
     if not no_build:
-        print("==> 构建 HAP（no codesign）...")
+        print(f"==> 构建 HAP（{mode}, no codesign）...")
         result = subprocess.run(
-            ["fvm", "flutter", "build", "hap", "--debug",
+            ["fvm", "flutter", "build", "hap", f"--{mode}",
              "--target-platform", "ohos-arm64", "--no-codesign"],
             cwd=PROJ
         )
@@ -287,7 +296,7 @@ def main():
     # 如果 profile 已存在且不强制刷新，直接签名安装
     if CERT_FILE.exists() and PROFILE_FILE.exists() and not force_profile:
         print("证书和 Profile 已存在，跳过 API 调用")
-        sign_and_install()
+        sign_and_install(mode)
         return
 
     auth = load_or_login()
@@ -304,10 +313,13 @@ def main():
         ensure_profile(auth, cert_id, device_ids)
 
     print("\n==> 签名 & 安装...")
-    sign_and_install()
+    sign_and_install(mode)
 
-    print("\n==> 完成！在设备上打开 App，然后运行:")
-    print(f"    cd {PROJ} && fvm flutter attach")
+    if mode != "release":
+        print("\n==> 完成！在设备上打开 App，然后运行:")
+        print(f"    cd {PROJ} && fvm flutter attach")
+    else:
+        print("\n==> 完成！")
 
 if __name__ == "__main__":
     main()
