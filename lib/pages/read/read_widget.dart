@@ -143,7 +143,7 @@ class ViewTopBar extends HookConsumerWidget {
                   if (context.isTablet)
                     GlassContainer(
                       padding: const EdgeInsets.symmetric(horizontal: 4),
-                      shape: LiquidRoundedSuperellipse(borderRadius: 999),
+                      shape: const LiquidRoundedSuperellipse(borderRadius: 999),
                       settings: _glassSettings(isDark),
                       child: _TabletButtonRow(ref: ref),
                     )

@@ -3,8 +3,8 @@ import 'dart:math';
 
 import 'package:auto_route/auto_route.dart';
 import 'package:eros_n/common/const/const.dart';
-import 'package:eros_n/component/widget/adaptive_app_bar.dart';
 import 'package:eros_n/component/models/comment.dart';
+import 'package:eros_n/component/widget/adaptive_app_bar.dart';
 import 'package:eros_n/component/widget/eros_cached_network_image.dart';
 import 'package:eros_n/generated/l10n.dart';
 import 'package:eros_n/network/app_dio/pdio.dart';
