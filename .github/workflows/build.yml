@@ -44,6 +44,7 @@ jobs:
 
       - name: Rezip HAP (compress .so for smaller distribution)
         run: |
+          apt-get install -y zip > /dev/null 2>&1 || true
           orig="build/ohos/hap/entry-default-unsigned.hap"
           dst="build/ohos/hap/entry-default-unsigned-rezip.hap"
           tmpdir=$(mktemp -d)
