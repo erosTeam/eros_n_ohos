@@ -26,8 +26,8 @@ dependencies:
   http: ^1.6.0
   webview_flutter: ^4.0.2
   html: ^0.15.6
-  # database: replaced objectbox with ffastdb (pure Dart, HarmonyOS compatible)
-  ffastdb: ^0.0.1
+  # database: sqflite (HarmonyOS adaptation via OpenHarmony SIG)
+  sqflite: any
   hive: ^2.2.3
   hive_flutter: ^1.1.0
   cached_network_image: ^3.4.1
@@ -119,6 +119,15 @@ index_generator:
       name: parser
 
 dependency_overrides:
+  # Force all packages to use the HarmonyOS-adapted sqflite fork.
+  sqflite:
+    git:
+      url: "https://atomgit.com/openharmony-sig/flutter_sqflite.git"
+      path: "sqflite"
+  sqflite_common:
+    git:
+      url: "https://atomgit.com/openharmony-sig/flutter_sqflite.git"
+      path: "sqflite_common"
   # Pinned to last versions supporting Dart <3.10 (flutter-ohos Dart SDK is 3.9.2).
   # Once flutter-ohos upgrades its Dart SDK these overrides can be removed.
   wakelock_plus: ^1.4.0

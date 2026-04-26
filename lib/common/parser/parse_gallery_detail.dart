@@ -271,7 +271,7 @@ Future<Gallery> _enrichGalleryDetail(Gallery raw) async {
   final enrichedTags = <Tag>[];
   for (var i = 0; i < raw.tags.length; i++) {
     final t = raw.tags[i];
-    final translated = objectBoxHelper.findTagTranslate(
+    final translated = await objectBoxHelper.findTagTranslateAsync(
       t.name ?? '',
       namespace: getTagNamespace(t.type ?? ''),
     );
@@ -300,12 +300,12 @@ Future<Gallery> _enrichGalleryDetail(Gallery raw) async {
         tags.add(st);
         continue;
       }
-      final nhTag = objectBoxHelper.findNhTag(id);
+      final nhTag = await objectBoxHelper.findNhTagAsync(id);
       if (nhTag == null) {
         tags.add(st);
         continue;
       }
-      final translated = objectBoxHelper.findTagTranslate(
+      final translated = await objectBoxHelper.findTagTranslateAsync(
         nhTag.name ?? '',
         namespace: getTagNamespace(nhTag.type ?? ''),
       );

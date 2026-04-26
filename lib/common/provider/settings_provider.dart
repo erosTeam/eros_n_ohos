@@ -1,6 +1,5 @@
 import 'package:eros_n/common/enum.dart';
 import 'package:eros_n/common/global.dart';
-import 'package:eros_n/common/provider/tag_translate_provider.dart';
 import 'package:eros_n/component/models/index.dart';
 import 'package:flutter/material.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -21,9 +20,6 @@ class SettingsNotifier extends _$SettingsNotifier {
 
   void setTagTranslate(bool value) {
     _save(state.copyWith(isTagTranslate: value));
-    if (value) {
-      ref.read(tagTranslateProvider.notifier).updateDb();
-    }
   }
 
   void setDynamicColor(bool value) =>

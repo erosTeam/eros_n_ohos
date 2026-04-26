@@ -1,0 +1,23 @@
+---
+description: Never make implementation decisions unilaterally — always ask the user first
+alwaysApply: true
+---
+
+# No Unilateral Decisions
+
+When there are multiple valid implementation approaches, or when a change is non-trivial and affects architecture/design, **always present the options and ask the user to choose before writing any code**.
+
+Do NOT:
+- Pick an approach yourself and start coding without asking
+- Say "I propose X" then immediately implement X in the same response
+- Make architectural changes (e.g. replacing a storage backend, changing a data flow) without explicit user approval
+- Keep pushing the same solution after the user has already rejected it
+- Push a solution you personally prefer just because you think it's "the right answer"
+
+Do:
+- **First ask about requirements/constraints** before proposing any solutions
+- Describe the problem briefly
+- List 2–3 concrete options with trade-offs
+- Ask the user which direction to take
+- Only start implementing after the user picks one
+- If user rejects a proposal, drop it — do not bring it up again unless explicitly asked

@@ -5,7 +5,7 @@ import 'package:eros_n/common/const/const.dart';
 import 'package:eros_n/network/app_dio/app_dio.dart';
 import 'package:eros_n/routes/routes.dart';
 import 'package:eros_n/store/db/db_store.dart';
-import 'package:eros_n/store/db/ffastdb_store.dart';
+import 'package:eros_n/store/db/sqlite_db_store.dart';
 import 'package:eros_n/store/kv/hive.dart';
 import 'package:eros_n/utils/clipboard_helper.dart';
 import 'package:eros_n/utils/logger.dart';
@@ -18,7 +18,7 @@ import 'package:path_provider/path_provider.dart';
 DioHttpConfig globalDioConfig = nhDioConfig;
 
 final HiveHelper hiveHelper = HiveHelper();
-final DbStore objectBoxHelper = FfastDbStore();
+final DbStore objectBoxHelper = SqliteDbStore();
 final ClipboardHelper clipboardHelper = ClipboardHelper();
 final erosRouter = AppRouter();
 
@@ -122,7 +122,7 @@ class Global {
       debugPrint('[Global] HiveHelper.init failed: $e');
     }
 
-    // objectBoxHelper.init() opens ffastdb files and is slow on HarmonyOS.
+    // objectBoxHelper.init() opens the SQLite database.
     // Fire-and-forget so the UI can appear immediately.
     objectBoxHelper.init().catchError((Object e) {
       debugPrint('[Global] objectBoxHelper.init failed: $e');
