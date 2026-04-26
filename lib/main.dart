@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:eros_n/utils/dev_logger.dart' as devlog;
 import 'package:auto_route/auto_route.dart';
 import 'package:dynamic_color/dynamic_color.dart';
 import 'package:eros_n/common/global.dart';
@@ -16,6 +15,7 @@ import 'package:eros_n/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:liquid_glass_widgets/liquid_glass_widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_smart_dialog/flutter_smart_dialog.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
@@ -23,8 +23,6 @@ import 'package:window_manager/window_manager.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
-  await devlog.initDevLogger();
 
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
@@ -35,12 +33,8 @@ Future<void> main() async {
     await InAppWebViewController.setWebContentsDebuggingEnabled(true);
   }
 
-  try {
-    await Global.init();
-  } catch (e, st) {
-    debugPrint('[main] Global.init failed: $e\n$st');
-    devlog.log('Global.init failed: $e\n$st', name: 'main');
-  }
+  await Global.init();
+  await LiquidGlassWidgets.initialize();
 
   initLogger();
   runApp(
@@ -193,9 +187,8 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
                 }
                 return child;
               },
-              builder: (context, child) {
-                return HiddenWebViewProxyHost(child: child ?? const SizedBox());
-              },
+              builder: (context, child) =>
+                  HiddenWebViewProxyHost(child: child ?? const SizedBox()),
             ),
           ),
           // builder: (BuildContext context, Widget? child) {
