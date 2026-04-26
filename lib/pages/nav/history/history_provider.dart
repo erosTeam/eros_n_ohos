@@ -2,6 +2,7 @@ import 'package:eros_n/common/global.dart';
 import 'package:eros_n/component/models/index.dart';
 import 'package:eros_n/pages/nav/front/list_view_state.dart';
 import 'package:eros_n/store/db/entity/gallery_history.dart';
+import 'package:eros_n/utils/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
 
 part 'history_provider.g.dart';
@@ -22,6 +23,11 @@ class HistoryNotifier extends _$HistoryNotifier {
   }
 
   Future<void> addHistory(Gallery gallery) async {
+    final existing = ref
+        .read(historyGallerysProvider)
+        .where((h) => h.gid == gallery.gid)
+        .firstOrNull;
+
     final galleryHistory = GalleryHistory()
       ..gid = gallery.gid
       ..title = gallery.title.englishTitle ?? ''
@@ -30,7 +36,8 @@ class HistoryNotifier extends _$HistoryNotifier {
       ..coverImgHeight = gallery.images.cover.imgHeight
       ..url = gallery.url
       ..mediaId = gallery.mediaId
-      ..lastReadTime = DateTime.now().millisecondsSinceEpoch;
+      ..lastReadTime = DateTime.now().millisecondsSinceEpoch
+      ..lastReadIndex = existing?.lastReadIndex;
 
     _historyGalleryNotifier.insertGallery(galleryHistory);
     await objectBoxHelper.addHistory(galleryHistory);
@@ -45,12 +52,31 @@ class HistoryNotifier extends _$HistoryNotifier {
     _historyGalleryNotifier.clearGallerys();
     objectBoxHelper.clearHistory();
   }
+
+  Future<void> updateReadIndex(int gid, int index) async {
+    _historyGalleryNotifier.updateReadIndex(gid, index);
+    await objectBoxHelper.updateHistoryReadIndex(gid, index);
+  }
 }
 
 @Riverpod(keepAlive: true)
 class HistoryGallerys extends _$HistoryGallerys {
   @override
-  List<GalleryHistory> build() => objectBoxHelper.getAllHistory();
+  List<GalleryHistory> build() {
+    _loadFromDb();
+    return [];
+  }
+
+  Future<void> _loadFromDb() async {
+    try {
+      final histories = await objectBoxHelper.getAllHistoryAsync();
+      if (histories.isNotEmpty) {
+        state = histories;
+      }
+    } catch (e) {
+      logger.w('HistoryGallerys._loadFromDb failed: $e');
+    }
+  }
 
   void addGallerys(List<GalleryHistory> gallerys) {
     state = [...state, ...gallerys];
@@ -71,6 +97,13 @@ class HistoryGallerys extends _$HistoryGallerys {
 
   void clearGallerys() {
     state = [];
+  }
+
+  void updateReadIndex(int gid, int index) {
+    state = [
+      for (final h in state)
+        if (h.gid == gid) (h..lastReadIndex = index) else h,
+    ];
   }
 }
 

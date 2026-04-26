@@ -9,7 +9,7 @@ import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-const int _kDbVersion = 1;
+const int _kDbVersion = 2;
 
 class SqliteDbStore implements DbStore {
   Database? _db;
@@ -34,6 +34,7 @@ class SqliteDbStore implements DbStore {
       dbPath,
       version: _kDbVersion,
       onCreate: _onCreate,
+      onUpgrade: _onUpgrade,
     );
     _isInitialized = true;
   }
@@ -59,7 +60,8 @@ class SqliteDbStore implements DbStore {
         thumbUrl TEXT,
         coverImgHeight INTEGER,
         coverImgWidth INTEGER,
-        lastReadTime INTEGER
+        lastReadTime INTEGER,
+        lastReadIndex INTEGER
       )
     ''');
 
@@ -93,6 +95,14 @@ class SqliteDbStore implements DbStore {
     );
   }
 
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      await db.execute(
+        'ALTER TABLE gallery_history ADD COLUMN lastReadIndex INTEGER',
+      );
+    }
+  }
+
   @override
   void close() {
     _db?.close();
@@ -107,6 +117,7 @@ class SqliteDbStore implements DbStore {
   @override
   List<GalleryHistory> getAllHistory() => [];
 
+  @override
   Future<List<GalleryHistory>> getAllHistoryAsync() async {
     final rows = await _database.query(
       'gallery_history',
@@ -117,6 +128,16 @@ class SqliteDbStore implements DbStore {
 
   @override
   Future<void> addHistory(GalleryHistory h) async {
+    // Preserve lastReadIndex from existing row if present.
+    final existing = await _database.query(
+      'gallery_history',
+      columns: ['lastReadIndex'],
+      where: 'gid = ?',
+      whereArgs: [h.gid],
+    );
+    if (existing.isNotEmpty && h.lastReadIndex == null) {
+      h.lastReadIndex = (existing.first['lastReadIndex'] as num?)?.toInt();
+    }
     await _database.insert(
       'gallery_history',
       _historyToMap(h),
@@ -139,6 +160,16 @@ class SqliteDbStore implements DbStore {
   @override
   Future<void> clearHistory() async {
     await _database.delete('gallery_history');
+  }
+
+  @override
+  Future<void> updateHistoryReadIndex(int gid, int index) async {
+    await _database.update(
+      'gallery_history',
+      {'lastReadIndex': index},
+      where: 'gid = ?',
+      whereArgs: [gid],
+    );
   }
 
   // ---------------------------------------------------------------------------
@@ -368,6 +399,7 @@ class SqliteDbStore implements DbStore {
         'coverImgHeight': h.coverImgHeight,
         'coverImgWidth': h.coverImgWidth,
         'lastReadTime': h.lastReadTime,
+        'lastReadIndex': h.lastReadIndex,
       };
 
   static GalleryHistory _mapToHistory(Map<String, dynamic> d) => GalleryHistory(
@@ -381,6 +413,7 @@ class SqliteDbStore implements DbStore {
         coverImgHeight: (d['coverImgHeight'] as num?)?.toInt(),
         coverImgWidth: (d['coverImgWidth'] as num?)?.toInt(),
         lastReadTime: (d['lastReadTime'] as num?)?.toInt(),
+        lastReadIndex: (d['lastReadIndex'] as num?)?.toInt(),
       );
 
   static Map<String, dynamic> _tagTranslateToMap(TagTranslate t) => {

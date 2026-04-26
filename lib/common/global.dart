@@ -122,11 +122,11 @@ class Global {
       debugPrint('[Global] HiveHelper.init failed: $e');
     }
 
-    // objectBoxHelper.init() opens the SQLite database.
-    // Fire-and-forget so the UI can appear immediately.
-    objectBoxHelper.init().catchError((Object e) {
+    try {
+      await objectBoxHelper.init();
+    } catch (e) {
       debugPrint('[Global] objectBoxHelper.init failed: $e');
-    });
+    }
 
     userAgent = hiveHelper.getUserAgent();
     userAgent ??= NHConst.userAgent;

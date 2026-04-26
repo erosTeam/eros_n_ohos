@@ -10,6 +10,7 @@ class GalleryHistory {
     this.coverImgHeight,
     this.coverImgWidth,
     this.lastReadTime,
+    this.lastReadIndex,
   });
 
   int gid;
@@ -22,4 +23,5 @@ class GalleryHistory {
   int? coverImgHeight;
   int? coverImgWidth;
   int? lastReadTime;
+  int? lastReadIndex;
 }
