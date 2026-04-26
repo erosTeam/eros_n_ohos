@@ -146,7 +146,6 @@ class ReadNotifier extends _$ReadNotifier {
   }
 
   Future<void> handOnTapCenter(BuildContext context) async {
-    logger.t('handOnTapCenter');
 
     if (state.showAppBar) {
       hideAppBar();
@@ -191,7 +190,9 @@ class ReadNotifier extends _$ReadNotifier {
   }
 
   Future<void> showAppBar() async {
-    await unFullscreen();
+    // Don't await: SystemChrome.setEnabledSystemUIMode may not resolve on
+    // HarmonyOS, which would hang the function and prevent state updates.
+    unawaited(unFullscreen());
     state = state.copyWith(
       showAppBar: true,
       bottomBarOffset: 0,

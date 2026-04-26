@@ -521,8 +521,6 @@ class ImageGestureDetector extends HookConsumerWidget {
     return GestureDetector(
       behavior: HitTestBehavior.deferToChild,
       onTapUp: (details) {
-        // logger.d('${details.globalPosition} ${details.localPosition}');
-
         final globalPosition = details.globalPosition;
         if (globalPosition.dx < context.width * (1 - lrRatio) &&
             globalPosition.dx > context.width * lrRatio) {
