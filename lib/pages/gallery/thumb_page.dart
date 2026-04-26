@@ -70,11 +70,13 @@ class ThumbBody extends StatelessWidget {
     required this.scrollController,
     required this.gid,
     this.backGround,
+    this.topPadding = 0,
   });
 
   final ScrollController scrollController;
   final int gid;
   final Widget? backGround;
+  final double topPadding;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +87,11 @@ class ThumbBody extends StatelessWidget {
           controller: scrollController,
           child: CustomScrollView(
             controller: scrollController,
-            slivers: [ThumbsView(gid: gid)],
+            slivers: [
+              if (topPadding > 0)
+                SliverPadding(padding: EdgeInsets.only(top: topPadding)),
+              ThumbsView(gid: gid),
+            ],
           ),
         ),
       ],

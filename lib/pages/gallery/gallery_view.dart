@@ -173,11 +173,15 @@ class GalleryPageBody extends HookConsumerWidget {
               }),
         flexibleSpace: glass
             ? ListenableBuilder(
-                listenable: scrollController,
+                listenable: Listenable.merge([scrollController, thumbScrollController]),
                 builder: (context, _) {
-                  final scrolled = scrollController.hasClients &&
+                  final leftScrolled = scrollController.hasClients &&
                       scrollController.offset > 0;
-                  if (!scrolled) return const SizedBox.shrink();
+                  final rightScrolled = thumbScrollController.hasClients &&
+                      thumbScrollController.offset > 0;
+                  if (!leftScrolled && !rightScrolled) {
+                    return const SizedBox.shrink();
+                  }
                   return glassFlexibleSpace(context);
                 },
               )
@@ -307,10 +311,14 @@ class GalleryPageBody extends HookConsumerWidget {
                         child: _BackGround(thumbUrl: thumbUrl),
                       ),
                       SafeArea(
+                        top: !glass,
                         bottom: false,
                         child: ThumbBody(
                           gid: gid,
                           scrollController: thumbScrollController,
+                          topPadding: glass
+                              ? kToolbarHeight
+                              : 0,
                         ),
                       ),
                     ],
