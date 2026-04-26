@@ -1,23 +1,41 @@
 ---
-description: Never make implementation decisions unilaterally — always ask the user first
+description: Core behavioral rules — read user messages, answer questions, only change what was asked
 alwaysApply: true
 ---
 
-# No Unilateral Decisions
+# Core Rules
 
-When there are multiple valid implementation approaches, or when a change is non-trivial and affects architecture/design, **always present the options and ask the user to choose before writing any code**.
+## 1. Read and Answer First
 
-Do NOT:
-- Pick an approach yourself and start coding without asking
-- Say "I propose X" then immediately implement X in the same response
-- Make architectural changes (e.g. replacing a storage backend, changing a data flow) without explicit user approval
-- Keep pushing the same solution after the user has already rejected it
-- Push a solution you personally prefer just because you think it's "the right answer"
+- **Read every sentence the user wrote.** Do not skip anything.
+- If the user asks a question, **answer the question**. Do not start editing code, reading files, or calling tools.
+- Only act (edit code, run commands) after the user explicitly tells you to.
 
-Do:
-- **First ask about requirements/constraints** before proposing any solutions
-- Describe the problem briefly
-- List 2–3 concrete options with trade-offs
-- Ask the user which direction to take
-- Only start implementing after the user picks one
-- If user rejects a proposal, drop it — do not bring it up again unless explicitly asked
+## 2. Only Change What Was Asked
+
+- When the user lists specific items to fix, fix **only** those items.
+- Do NOT touch other code "while I'm at it", even if it looks related.
+- If you think something else needs changing, **ask first**.
+
+## 3. Post-Change Review
+
+- After every edit, review changes against the user's request **item by item**.
+- If any change does NOT map to something the user asked for, revert it.
+
+## 4. Repeated Feedback = You Failed
+
+- If the user reports the same issue multiple times, you failed to fix it.
+- Re-read the user's exact words before attempting again.
+- Do NOT change something else hoping it incidentally fixes the reported issue.
+
+## 5. No Unilateral Decisions
+
+- When there are multiple valid approaches, present options and ask.
+- Do NOT pick an approach and start coding without asking.
+- If the user rejects a proposal, drop it.
+
+## 6. Terminal / Deployment
+
+- Do NOT run terminal commands (build, deploy, push) unless the user tells you to.
+- "提交" means commit ohos first. "同步主项目" means commit the main project.
+- Do NOT push to remote unless explicitly asked.

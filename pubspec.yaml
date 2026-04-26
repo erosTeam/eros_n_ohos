@@ -91,7 +91,7 @@ dependencies:
 
   clock: any
   crypto: ^3.0.0
-  liquid_glass_widgets: ^0.5.0
+  liquid_glass_widgets: ^0.8.4
 dev_dependencies:
   # Code generation tools removed in ohos fork — generated files are committed.
   # Run `flutter pub run build_runner build` in the main project (eros_n) instead.
@@ -144,3 +144,4 @@ dependency_overrides:
   flutter_keyboard_visibility: ^5.4.0
   flutter_typeahead: ^5.2.0
   dio_cache_interceptor: ^3.4.0
+  meta: ^1.17.0

@@ -714,10 +714,10 @@ packages:
     dependency: "direct main"
     description:
       name: liquid_glass_widgets
-      sha256: "13c4b3295187e69a54eb531125358e3602d47c656488babba2f7e52f0e0dd0a8"
+      sha256: "0fadc4c070fe9680a76edb1fdb3461c709e7719701c0e4cbbba81f5a16f6d68c"
       url: "https://pub.dev"
     source: hosted
-    version: "0.5.0"
+    version: "0.8.4"
   logger:
     dependency: "direct main"
     description:
@@ -751,13 +751,13 @@ packages:
     source: hosted
     version: "0.11.1"
   meta:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
       name: meta
-      sha256: e3641ec5d63ebf0d9b41bd43201a66e3fc79a65db5f61fc181f04cd27aab950c
+      sha256: "23f08335362185a5ea2ad3a4e597f1375e78bce8a040df5c600c8d3552ef2394"
       url: "https://pub.dev"
     source: hosted
-    version: "1.16.0"
+    version: "1.17.0"
   mime:
     dependency: transitive
     description:
@@ -766,14 +766,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.0"
-  motor:
-    dependency: transitive
-    description:
-      name: motor
-      sha256: cbd49f21b00e568c2b1a55f134ed803614a107782f4fea7769693bca32940c58
-      url: "https://pub.dev"
-    source: hosted
-    version: "1.1.0"
   nhentai:
     dependency: "direct dev"
     description:
