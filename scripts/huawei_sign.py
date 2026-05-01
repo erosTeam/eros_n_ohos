@@ -256,7 +256,7 @@ def _fix_so_compression(hap_path: Path):
     finally:
         shutil.rmtree(tmp)
 
-def sign_and_install(mode: str):
+def sign_and_install(mode: str, target_device: str = None):
     signed_hap = _signed_hap(mode)
     xiaobai_p12 = SIGN_DIR / "xiaobai.p12"
     ks, alias, pwd = str(xiaobai_p12), "xiaobai", "xiaobai123"
@@ -286,8 +286,11 @@ def sign_and_install(mode: str):
         raise RuntimeError("签名失败")
 
     print("安装 HAP...")
-    targets_result = subprocess.run([str(HDC), "list", "targets"], capture_output=True, text=True)
-    devices = [d.strip() for d in targets_result.stdout.splitlines() if d.strip() and d.strip() != "[Empty]"]
+    if target_device:
+        devices = [target_device]
+    else:
+        targets_result = subprocess.run([str(HDC), "list", "targets"], capture_output=True, text=True)
+        devices = [d.strip() for d in targets_result.stdout.splitlines() if d.strip() and d.strip() != "[Empty]"]
     for dev in devices:
         print(f"  安装到 {dev}...")
         result = subprocess.run([str(HDC), "-t", dev, "install", str(signed_hap)], capture_output=True, text=True)
@@ -318,6 +321,11 @@ def main():
     no_build = "--no-build" in sys.argv
     force_profile = "--force-profile" in sys.argv
 
+    target_device = None
+    for i, arg in enumerate(sys.argv):
+        if arg == "-d" and i + 1 < len(sys.argv):
+            target_device = sys.argv[i + 1]
+
     if "--release" in sys.argv:
         mode = "release"
     elif "--profile" in sys.argv:
@@ -342,7 +350,7 @@ def main():
     # 如果 profile 已存在且不强制刷新，直接签名安装
     if CERT_FILE.exists() and PROFILE_FILE.exists() and not force_profile:
         print("证书和 Profile 已存在，跳过 API 调用")
-        sign_and_install(mode)
+        sign_and_install(mode, target_device)
         return
 
     auth = load_or_login()
@@ -363,7 +371,7 @@ def main():
         ensure_profile(auth, cert_id, device_ids)
 
     print("\n==> 签名 & 安装...")
-    sign_and_install(mode)
+    sign_and_install(mode, target_device)
 
     if mode != "release":
         print("\n==> 完成！在设备上打开 App，然后运行:")
