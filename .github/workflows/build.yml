@@ -42,14 +42,18 @@ jobs:
             --target-platform ohos-arm64 \
             --no-codesign
 
-      - name: Rezip HAP (compress .so for smaller distribution)
+      - name: Rezip HAP (compress for smaller distribution)
         run: |
           apt-get install -y zip > /dev/null 2>&1 || true
           orig="build/ohos/hap/entry-default-unsigned.hap"
           dst="build/ohos/hap/entry-default-unsigned-rezip.hap"
           tmpdir=$(mktemp -d)
           unzip -q "$orig" -d "$tmpdir"
-          (cd "$tmpdir" && zip -r -6 "$OLDPWD/$dst" .)
+          cd "$tmpdir"
+          # .so must stay STORED for HarmonyOS code signature verification
+          find . -name '*.so' | zip -0 "$OLDPWD/$dst" -@
+          find . ! -name '*.so' ! -type d | zip -6 "$OLDPWD/$dst" -@
+          cd "$OLDPWD"
           rm -rf "$tmpdir"
           echo "original: $(du -sh "$orig" | cut -f1)  rezip: $(du -sh "$dst" | cut -f1)"
 
