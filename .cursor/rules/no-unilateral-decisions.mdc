@@ -39,3 +39,12 @@ alwaysApply: true
 - Do NOT run terminal commands (build, deploy, push) unless the user tells you to.
 - "提交" means commit ohos first. "同步主项目" means commit the main project.
 - Do NOT push to remote unless explicitly asked.
+
+## 7. Debugging — Always Check Logs First
+
+- When the user reports a runtime error, **read the logs before changing code**.
+- This is a Flutter app running on HarmonyOS via `hdc`.
+- Logs are available in the terminal running `./dev.sh --attach` (Flutter attach output).
+- Check the terminals folder for active terminal output files.
+- Also check the on-device log file via: `hdc shell cat /data/app/el2/100/base/com.erosteam.erosn/haps/entry/files/debug.log`
+- **Never guess** the cause of an error. Read the actual stack trace first, then fix.
