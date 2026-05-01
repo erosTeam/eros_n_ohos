@@ -968,6 +968,36 @@ class L10n {
       args: [downloaded, total],
     );
   }
+
+  /// `Added to favorites`
+  String get favorite_added {
+    return Intl.message(
+      'Added to favorites',
+      name: 'favorite_added',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Removed from favorites`
+  String get favorite_removed {
+    return Intl.message(
+      'Removed from favorites',
+      name: 'favorite_removed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Failed to update favorite: {error}`
+  String favorite_failed(Object error) {
+    return Intl.message(
+      'Failed to update favorite: $error',
+      name: 'favorite_failed',
+      desc: '',
+      args: [error],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

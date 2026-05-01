@@ -24,7 +24,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m1(count) => "共 ${count} 页";
 
-  static String m2(version) => "需要下载翻译数据,当前版本: ${version}";
+  static String m2(error) => "收藏操作失败：${error}";
+
+  static String m3(version) => "需要下载翻译数据,当前版本: ${version}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -74,6 +76,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "dynamic_color": MessageLookupByLibrary.simpleMessage("动态颜色"),
     "dynamic_color_tip": MessageLookupByLibrary.simpleMessage("根据壁纸自动调整主题颜色"),
     "english": MessageLookupByLibrary.simpleMessage("英语"),
+    "favorite_added": MessageLookupByLibrary.simpleMessage("已添加到收藏"),
+    "favorite_failed": m2,
+    "favorite_removed": MessageLookupByLibrary.simpleMessage("已取消收藏"),
     "favorites": MessageLookupByLibrary.simpleMessage("收藏"),
     "full_screen": MessageLookupByLibrary.simpleMessage("全屏"),
     "gallery": MessageLookupByLibrary.simpleMessage("画廊"),
@@ -142,7 +147,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "tag": MessageLookupByLibrary.simpleMessage("标签"),
     "tag_layout_on_item": MessageLookupByLibrary.simpleMessage("列表项标签布局"),
     "tag_translation": MessageLookupByLibrary.simpleMessage("标签翻译"),
-    "tag_translation_tip": m2,
+    "tag_translation_tip": m3,
     "tag_translation_update_failed": MessageLookupByLibrary.simpleMessage(
       "翻译数据更新失败",
     ),

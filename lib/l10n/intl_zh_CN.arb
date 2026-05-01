@@ -137,5 +137,13 @@
       "downloaded": {},
       "total": {}
     }
+  },
+  "favorite_added": "已添加到收藏",
+  "favorite_removed": "已取消收藏",
+  "favorite_failed": "收藏操作失败：{error}",
+  "@favorite_failed": {
+    "placeholders": {
+      "error": {}
+    }
   }
 }

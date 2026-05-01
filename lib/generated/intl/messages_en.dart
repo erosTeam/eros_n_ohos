@@ -24,7 +24,9 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m1(count) => "${count} pages";
 
-  static String m2(version) =>
+  static String m2(error) => "Failed to update favorite: ${error}";
+
+  static String m3(version) =>
       "need download tag translation data, version: ${version}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
@@ -85,6 +87,13 @@ class MessageLookup extends MessageLookupByLibrary {
       "Color will change according to the wallpaper",
     ),
     "english": MessageLookupByLibrary.simpleMessage("English"),
+    "favorite_added": MessageLookupByLibrary.simpleMessage(
+      "Added to favorites",
+    ),
+    "favorite_failed": m2,
+    "favorite_removed": MessageLookupByLibrary.simpleMessage(
+      "Removed from favorites",
+    ),
     "favorites": MessageLookupByLibrary.simpleMessage("Favorites"),
     "full_screen": MessageLookupByLibrary.simpleMessage("Full Screen"),
     "gallery": MessageLookupByLibrary.simpleMessage("Gallery"),
@@ -167,7 +176,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Tag Layout on Item",
     ),
     "tag_translation": MessageLookupByLibrary.simpleMessage("Tag Translation"),
-    "tag_translation_tip": m2,
+    "tag_translation_tip": m3,
     "tag_translation_update_failed": MessageLookupByLibrary.simpleMessage(
       "Translation data update failed",
     ),

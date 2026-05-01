@@ -137,5 +137,13 @@
       "downloaded": {},
       "total": {}
     }
+  },
+  "favorite_added": "Added to favorites",
+  "favorite_removed": "Removed from favorites",
+  "favorite_failed": "Failed to update favorite: {error}",
+  "@favorite_failed": {
+    "placeholders": {
+      "error": {}
+    }
   }
 }
