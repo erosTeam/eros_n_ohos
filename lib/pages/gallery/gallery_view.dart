@@ -999,34 +999,26 @@ class ThumbListView extends HookConsumerWidget {
               final GalleryImage image = pages[index];
               final iw = image.imgWidth;
               final ih = image.imgHeight;
-              final aspect = (iw != null && ih != null && ih > 0)
-                  ? iw / ih
-                  : 3 / 4;
+              final fullSizeAspect =
+                  (iw != null && ih != null && ih > 0) ? iw / ih : null;
+              final initialAspect = sanitizeThumbAspect(fullSizeAspect);
               final ext = NHConst.extMap[image.type] ?? 'webp';
               final builtUrl = mediaId == null
                   ? null
                   : (image.imageUrl ??
                         'https://t.nhentai.net/galleries/$mediaId/${index + 1}t.$ext');
+              if (builtUrl == null) return const SizedBox.shrink();
               return Consumer(
                 child: GestureDetector(
                   onTap: () async {
                     RouteUtil.goRead(context, ref, index: index);
                   },
                   child: Center(
-                    child: AspectRatio(
-                      aspectRatio: aspect,
-                      child: Card(
-                        clipBehavior: Clip.antiAlias,
-                        child: Hero(
-                          tag: '${gid}_$index',
-                          child: builtUrl == null
-                              ? nil
-                              : ErosCachedNetworkImage(
-                                  imageUrl: builtUrl,
-                                  fit: BoxFit.cover,
-                                ),
-                        ),
-                      ),
+                    child: ThumbAspectImage(
+                      imageUrl: builtUrl,
+                      heroTag: '${gid}_$index',
+                      initialAspect: initialAspect,
+                      cardMargin: const EdgeInsets.all(4),
                     ),
                   ),
                 ),

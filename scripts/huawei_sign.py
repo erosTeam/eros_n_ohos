@@ -1,9 +1,21 @@
 #!/usr/bin/env python3
 """
 huawei_sign.py - 调用 DevEco Studio IDE API 完成证书/Profile 创建，然后签名安装 HAP
+
 用法:
-  python3 scripts/huawei_sign.py              # 首次需要浏览器登录
-  python3 scripts/huawei_sign.py --no-build   # 跳过构建，直接用已有的 unsigned.hap
+  python3 scripts/huawei_sign.py                # debug 构建+签名+安装（自动选设备/读缓存）
+  python3 scripts/huawei_sign.py --no-build     # 跳过构建，直接用已有的 unsigned.hap
+  python3 scripts/huawei_sign.py --release      # release 模式
+  python3 scripts/huawei_sign.py --profile      # profile 模式
+  python3 scripts/huawei_sign.py -d all         # 安装到所有已连接设备
+  python3 scripts/huawei_sign.py -d <device>    # 安装到指定设备（不影响缓存）
+  python3 scripts/huawei_sign.py --force-profile # 强制重建 Profile
+  python3 scripts/huawei_sign.py -h             # 显示帮助
+
+设备缓存:
+  首次运行时若检测到多设备会提示选择，选择结果缓存 7 天。
+  缓存期内无需 -d 参数，自动使用上次选择的设备并刷新缓存时效。
+  -d all 时安装到所有设备，若缓存设备在线则同步刷新其缓存时效。
 """
 import sys, os, json, subprocess, shutil, urllib.request, urllib.parse
 import urllib.error, threading, webbrowser, random, time, zipfile, tempfile
@@ -17,6 +29,10 @@ TOOL_LIB    = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/open
 HAP_SIGN    = TOOL_LIB / "hap-sign-tool.jar"
 HDC         = Path("/home/gamer/devtool/ohos/command-line-tools/sdk/default/openharmony/toolchains/hdc")
 UNSIGNED_HAP = PROJ / "build/ohos/hap/entry-default-unsigned.hap"
+
+# 设备选择缓存文件及有效期（7 天）
+DEVICE_CACHE_FILE = Path.home() / ".cache" / "eros_n_ohos_device.json"
+DEVICE_CACHE_TTL  = 7 * 24 * 3600
 
 def _signed_hap(mode: str) -> Path:
     return PROJ / f"build/ohos/entry-{mode}-signed.hap"
@@ -256,7 +272,7 @@ def _fix_so_compression(hap_path: Path):
     finally:
         shutil.rmtree(tmp)
 
-def sign_and_install(mode: str, target_device: str = None):
+def sign_and_install(mode: str, devices: list[str]):
     signed_hap = _signed_hap(mode)
     xiaobai_p12 = SIGN_DIR / "xiaobai.p12"
     ks, alias, pwd = str(xiaobai_p12), "xiaobai", "xiaobai123"
@@ -286,15 +302,81 @@ def sign_and_install(mode: str, target_device: str = None):
         raise RuntimeError("签名失败")
 
     print("安装 HAP...")
-    if target_device:
-        devices = [target_device]
-    else:
-        targets_result = subprocess.run([str(HDC), "list", "targets"], capture_output=True, text=True)
-        devices = [d.strip() for d in targets_result.stdout.splitlines() if d.strip() and d.strip() != "[Empty]"]
     for dev in devices:
         print(f"  安装到 {dev}...")
         result = subprocess.run([str(HDC), "-t", dev, "install", str(signed_hap)], capture_output=True, text=True)
         print(f"  {(result.stdout + result.stderr).strip()}")
+
+# ── 设备缓存 ──────────────────────────────────────────────────────────────────
+def load_cached_device() -> str | None:
+    """返回缓存的设备地址（若未过期），否则返回 None。"""
+    if not DEVICE_CACHE_FILE.exists():
+        return None
+    try:
+        data = json.loads(DEVICE_CACHE_FILE.read_text())
+        if time.time() < data.get("expires", 0):
+            return data.get("device")
+    except Exception:
+        pass
+    return None
+
+def save_cached_device(device: str):
+    """将设备写入缓存并刷新 TTL。"""
+    DEVICE_CACHE_FILE.parent.mkdir(parents=True, exist_ok=True)
+    DEVICE_CACHE_FILE.write_text(json.dumps({
+        "device":  device,
+        "expires": time.time() + DEVICE_CACHE_TTL,
+    }))
+
+def pick_device(devices: list[str]) -> str:
+    """若只有一台设备直接返回；否则展示编号列表让用户选择。"""
+    if len(devices) == 1:
+        print(f"使用唯一已连接设备: {devices[0]}")
+        return devices[0]
+    print("\n检测到多个已连接设备，请选择安装目标:")
+    for i, dev in enumerate(devices):
+        print(f"  [{i + 1}] {dev}")
+    while True:
+        choice = input(f"输入序号 (1-{len(devices)}): ").strip()
+        if choice.isdigit() and 1 <= int(choice) <= len(devices):
+            return devices[int(choice) - 1]
+        print("无效输入，请重试")
+
+def resolve_install_targets(target_device_arg: str | None) -> list[str]:
+    """构建前确定安装目标列表。
+    - target_device_arg == "all"：安装到所有已连接设备
+    - target_device_arg 为具体地址：仅安装到该设备，并更新缓存为该设备
+    - None：读取缓存设备（若在线则复用并刷新 TTL），否则交互选择并写入缓存
+    """
+    targets_result = subprocess.run([str(HDC), "list", "targets"], capture_output=True, text=True)
+    connected = [d.strip() for d in targets_result.stdout.splitlines()
+                 if d.strip() and d.strip() != "[Empty]"]
+    if not connected:
+        raise RuntimeError("无已连接设备，请检查 hdc 连接")
+
+    if target_device_arg == "all":
+        devices = connected
+        cached = load_cached_device()
+        if cached and cached in connected:
+            save_cached_device(cached)   # 刷新缓存时效
+    elif target_device_arg:
+        # 明确指定设备，视为切换默认设备，写入缓存
+        devices = [target_device_arg]
+        save_cached_device(target_device_arg)
+    else:
+        cached = load_cached_device()
+        if cached and cached in connected:
+            print(f"使用缓存设备: {cached}")
+            save_cached_device(cached)   # 刷新缓存时效
+            devices = [cached]
+        else:
+            if cached and cached not in connected:
+                print(f"缓存设备 {cached} 当前未连接，重新选择...")
+            selected = pick_device(connected)
+            save_cached_device(selected)
+            devices = [selected]
+
+    return devices
 
 # ── 获取设备 UDID ───────────────────────────────────────────────────────────────
 def get_udid():
@@ -318,20 +400,39 @@ def get_udid():
 
 # ── main ──────────────────────────────────────────────────────────────────────
 def main():
-    no_build = "--no-build" in sys.argv
-    force_profile = "--force-profile" in sys.argv
+    args = sys.argv[1:]
 
+    if "-h" in args or "--help" in args:
+        print(__doc__)
+        sys.exit(0)
+
+    no_build      = "--no-build"       in args
+    force_profile = "--force-profile"  in args
+
+    # 解析 -d 参数：可以是 "all" 或具体设备地址
     target_device = None
-    for i, arg in enumerate(sys.argv):
-        if arg == "-d" and i + 1 < len(sys.argv):
-            target_device = sys.argv[i + 1]
+    for i, arg in enumerate(args):
+        if arg == "-d" and i + 1 < len(args):
+            target_device = args[i + 1]
+            break
 
-    if "--release" in sys.argv:
+    if "--release" in args:
         mode = "release"
-    elif "--profile" in sys.argv:
+    elif "--profile" in args:
         mode = "profile"
     else:
         mode = "debug"
+
+    # 构建前先确定安装目标，避免构建完成后才询问设备
+    print("==> 检查已连接设备...")
+    devices = resolve_install_targets(target_device)
+
+    # 唤醒目标设备屏幕并延长息屏时间，忽略错误
+    for dev in devices:
+        subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "wakeup"],
+                       capture_output=True)
+        subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "timeout", "-o", "3600000"],
+                       capture_output=True)
 
     if not no_build:
         print(f"==> 构建 HAP（{mode}, no codesign）...")
@@ -350,7 +451,7 @@ def main():
     # 如果 profile 已存在且不强制刷新，直接签名安装
     if CERT_FILE.exists() and PROFILE_FILE.exists() and not force_profile:
         print("证书和 Profile 已存在，跳过 API 调用")
-        sign_and_install(mode, target_device)
+        sign_and_install(mode, devices)
         return
 
     auth = load_or_login()
@@ -371,7 +472,7 @@ def main():
         ensure_profile(auth, cert_id, device_ids)
 
     print("\n==> 签名 & 安装...")
-    sign_and_install(mode, target_device)
+    sign_and_install(mode, devices)
 
     if mode != "release":
         print("\n==> 完成！在设备上打开 App，然后运行:")
