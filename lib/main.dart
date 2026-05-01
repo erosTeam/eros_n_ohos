@@ -88,12 +88,29 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _logScreenMetrics());
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
     super.dispose();
+  }
+
+  void _logScreenMetrics() {
+    final view = WidgetsBinding.instance.platformDispatcher.views.first;
+    final physicalSize = view.physicalSize;
+    final dpr = view.devicePixelRatio;
+    final dpW = physicalSize.width / dpr;
+    final dpH = physicalSize.height / dpr;
+    logger.d('Screen metrics: ${physicalSize.width.toInt()}x${physicalSize.height.toInt()} px, '
+        'dpr=$dpr, ${dpW.toStringAsFixed(1)}x${dpH.toStringAsFixed(1)} dp');
+  }
+
+  @override
+  void didChangeMetrics() {
+    super.didChangeMetrics();
+    _logScreenMetrics();
   }
 
   @override

@@ -1,5 +1,6 @@
 import 'package:auto_route/auto_route.dart';
 import 'package:eros_n/common/global.dart';
+import 'package:eros_n/utils/logger.dart';
 import 'package:eros_n/common/provider/download_provider.dart';
 import 'package:eros_n/component/widget/adaptive_app_bar.dart';
 import 'package:eros_n/component/widget/eros_cached_network_image.dart';
@@ -234,14 +235,14 @@ class _TaskCard extends ConsumerWidget {
     final String overflowLabel = isActive ? l.cancel : l.delete;
 
     void openReader() {
+      logger.d('openReader gid=${task.gid}');
       pushGalleryPage(task.gid);
       erosRouter.push(ReadRoute(colorScheme: Theme.of(context).colorScheme));
     }
 
     void openGallery() {
-      pushGalleryPage(task.gid);
-      erosRouter.push(GalleryRoute(gid: task.gid));
-      popGalleryPage();
+      logger.d('openGallery gid=${task.gid}');
+      RouteUtil.goGalleryByGid(ref, task.gid);
     }
 
     return Card(
@@ -257,7 +258,7 @@ class _TaskCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
             // Thumbnail — touches card edges on left/top/bottom
-            GestureDetector(
+            InkWell(
               onTap: openGallery,
               child: SizedBox(
                 width: 60,
