@@ -162,6 +162,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "download_completed": MessageLookupByLibrary.simpleMessage("已完成"),
     "download_failed": MessageLookupByLibrary.simpleMessage("下载失败"),
     "no_downloads": MessageLookupByLibrary.simpleMessage("暂无下载"),
+    "no_result": MessageLookupByLibrary.simpleMessage("无搜索结果"),
     "download_pending": MessageLookupByLibrary.simpleMessage("等待中"),
     "delete": MessageLookupByLibrary.simpleMessage("删除"),
     "download_total_pages": m1,

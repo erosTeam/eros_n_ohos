@@ -195,6 +195,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "download_completed": MessageLookupByLibrary.simpleMessage("Completed"),
     "download_failed": MessageLookupByLibrary.simpleMessage("Download Failed"),
     "no_downloads": MessageLookupByLibrary.simpleMessage("No Downloads"),
+    "no_result": MessageLookupByLibrary.simpleMessage("No Results"),
     "download_pending": MessageLookupByLibrary.simpleMessage("Pending"),
     "delete": MessageLookupByLibrary.simpleMessage("Delete"),
     "download_total_pages": m1,

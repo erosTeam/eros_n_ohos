@@ -9,10 +9,12 @@ import 'package:eros_n/pages/gallery/gallery_provider.dart';
 import 'package:eros_n/routes/routes.dart';
 import 'package:eros_n/store/db/entity/download_task.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:sliver_tools/sliver_tools.dart';
 
 @RoutePage()
-class DownloadsPage extends ConsumerWidget {
+class DownloadsPage extends HookConsumerWidget {
   const DownloadsPage({super.key});
 
   @override
@@ -21,64 +23,115 @@ class DownloadsPage extends ConsumerWidget {
     final tasks = ref.watch(downloadProvider);
     final l = L10n.of(context);
 
-    List<DownloadTask> _sorted(Iterable<DownloadTask> src) =>
+    final searchActive = useState(false);
+    final searchQuery = useState('');
+    final searchController = useTextEditingController();
+
+    bool matchesQuery(DownloadTask t) =>
+        searchQuery.value.isEmpty ||
+        t.title.toLowerCase().contains(searchQuery.value.toLowerCase());
+
+    List<DownloadTask> sorted(Iterable<DownloadTask> src) =>
         src.toList()..sort((a, b) => b.gid.compareTo(a.gid));
 
-    final downloading = _sorted(tasks.values.where((t) =>
-        t.status == DownloadStatus.downloading ||
-        t.status == DownloadStatus.pending));
-    final paused =
-        _sorted(tasks.values.where((t) => t.status == DownloadStatus.paused));
-    final completed =
-        _sorted(tasks.values.where((t) => t.status == DownloadStatus.completed));
-    final failed =
-        _sorted(tasks.values.where((t) => t.status == DownloadStatus.failed));
+    final downloading = sorted(tasks.values.where((t) =>
+        (t.status == DownloadStatus.downloading ||
+            t.status == DownloadStatus.pending) &&
+        matchesQuery(t)));
+    final paused = sorted(tasks.values
+        .where((t) => t.status == DownloadStatus.paused && matchesQuery(t)));
+    final completed = sorted(tasks.values
+        .where((t) => t.status == DownloadStatus.completed && matchesQuery(t)));
+    final failed = sorted(tasks.values
+        .where((t) => t.status == DownloadStatus.failed && matchesQuery(t)));
+
+    final hasResults = downloading.isNotEmpty ||
+        paused.isNotEmpty ||
+        completed.isNotEmpty ||
+        failed.isNotEmpty;
+
+    void activateSearch() => searchActive.value = true;
+
+    void deactivateSearch() {
+      searchActive.value = false;
+      searchQuery.value = '';
+      searchController.clear();
+    }
+
+    final appBar = adaptiveAppBar(
+      context: context,
+      ref: ref,
+      automaticallyImplyLeading: !searchActive.value,
+      leading: searchActive.value
+          ? IconButton(
+              icon: const Icon(Icons.arrow_back),
+              onPressed: deactivateSearch,
+            )
+          : null,
+      title: searchActive.value
+          ? TextField(
+              controller: searchController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: l.search,
+                border: InputBorder.none,
+              ),
+              onChanged: (v) => searchQuery.value = v,
+            )
+          : Text(l.download_management),
+      actions: searchActive.value
+          ? null
+          : [
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: activateSearch,
+              ),
+              IconButton(
+                icon: const Icon(Icons.settings_outlined),
+                onPressed: () => erosRouter.push(const DownloadSettingRoute()),
+              ),
+              const SizedBox(width: 8),
+            ],
+    );
+
+    Widget buildSection(String label, int count, List<DownloadTask> list) {
+      return MultiSliver(
+        pushPinnedChildren: true,
+        children: [
+          SliverPinnedHeader(
+            child: _SectionHeader(label: label, count: count),
+          ),
+          _TaskList(tasks: list),
+        ],
+      );
+    }
 
     return Scaffold(
       extendBodyBehindAppBar: glass,
-      appBar: adaptiveAppBar(
-        context: context,
-        ref: ref,
-        title: Text(l.download_management),
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.settings_outlined),
-            onPressed: () => erosRouter.push(const DownloadSettingRoute()),
-          ),
-          const SizedBox(width: 8),
-        ],
-      ),
+      appBar: appBar,
       body: tasks.isEmpty
-          ? _EmptyState()
-          : CustomScrollView(
-              slivers: [
-                if (glass)
-                  SliverToBoxAdapter(
-                    child: SizedBox(height: glassBodyPadding(context).top),
-                  ),
-                if (downloading.isNotEmpty) ...[
-                  _SectionHeader(
-                      label: l.downloading, count: downloading.length),
-                  _TaskList(tasks: downloading),
-                ],
-                if (paused.isNotEmpty) ...[
-                  _SectionHeader(
-                      label: l.download_paused, count: paused.length),
-                  _TaskList(tasks: paused),
-                ],
-                if (completed.isNotEmpty) ...[
-                  _SectionHeader(
-                      label: l.download_completed, count: completed.length),
-                  _TaskList(tasks: completed),
-                ],
-                if (failed.isNotEmpty) ...[
-                  _SectionHeader(
-                      label: l.download_failed, count: failed.length),
-                  _TaskList(tasks: failed),
-                ],
-                const SliverToBoxAdapter(child: SizedBox(height: 24)),
-              ],
-            ),
+          ? const _EmptyState()
+          : !hasResults
+              ? const _NoResultsState()
+              : CustomScrollView(
+                  slivers: [
+                    if (glass)
+                      SliverToBoxAdapter(
+                        child: SizedBox(height: glassBodyPadding(context).top),
+                      ),
+                    if (downloading.isNotEmpty)
+                      buildSection(
+                          l.downloading, downloading.length, downloading),
+                    if (paused.isNotEmpty)
+                      buildSection(l.download_paused, paused.length, paused),
+                    if (completed.isNotEmpty)
+                      buildSection(
+                          l.download_completed, completed.length, completed),
+                    if (failed.isNotEmpty)
+                      buildSection(l.download_failed, failed.length, failed),
+                    const SliverToBoxAdapter(child: SizedBox(height: 24)),
+                  ],
+                ),
     );
   }
 }
@@ -88,6 +141,8 @@ class DownloadsPage extends ConsumerWidget {
 // ---------------------------------------------------------------------------
 
 class _EmptyState extends StatelessWidget {
+  const _EmptyState();
+
   @override
   Widget build(BuildContext context) {
     return Center(
@@ -113,7 +168,38 @@ class _EmptyState extends StatelessWidget {
 }
 
 // ---------------------------------------------------------------------------
-// Section header
+// No search results state
+// ---------------------------------------------------------------------------
+
+class _NoResultsState extends StatelessWidget {
+  const _NoResultsState();
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(
+            Icons.search_off_outlined,
+            size: 64,
+            color: Theme.of(context).colorScheme.outlineVariant,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            L10n.of(context).no_result,
+            style: Theme.of(context).textTheme.bodyLarge?.copyWith(
+                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Section header — regular widget (wrapped in SliverPinnedHeader by parent)
 // ---------------------------------------------------------------------------
 
 class _SectionHeader extends StatelessWidget {
@@ -125,7 +211,8 @@ class _SectionHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
-    return SliverToBoxAdapter(
+    return ColoredBox(
+      color: Theme.of(context).scaffoldBackgroundColor,
       child: Padding(
         padding: const EdgeInsets.fromLTRB(16, 12, 16, 4),
         child: Row(
@@ -213,8 +300,7 @@ class _TaskCard extends ConsumerWidget {
     } else if (isPending) {
       statusText = l.download_pending;
     } else {
-      statusText =
-          l.download_progress(task.downloadedPages, task.totalPages);
+      statusText = l.download_progress(task.downloadedPages, task.totalPages);
     }
 
     // Primary action
@@ -257,113 +343,112 @@ class _TaskCard extends ConsumerWidget {
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-            // Thumbnail — touches card edges on left/top/bottom
-            InkWell(
-              onTap: openGallery,
-              child: SizedBox(
-                width: 60,
-                child: task.thumbUrl.isNotEmpty
-                    ? ErosCachedNetworkImage(
-                        imageUrl: task.thumbUrl,
-                        fit: BoxFit.cover,
-                      )
-                    : ColoredBox(color: scheme.surfaceContainerHighest),
+              // Thumbnail — touches card edges on left/top/bottom
+              InkWell(
+                onTap: openGallery,
+                child: SizedBox(
+                  width: 60,
+                  child: task.thumbUrl.isNotEmpty
+                      ? ErosCachedNetworkImage(
+                          imageUrl: task.thumbUrl,
+                          fit: BoxFit.cover,
+                        )
+                      : ColoredBox(color: scheme.surfaceContainerHighest),
+                ),
               ),
-            ),
-            // Info column
-            Expanded(
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      task.title,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: Theme.of(context)
-                          .textTheme
-                          .bodyMedium
-                          ?.copyWith(height: 1.3),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      statusText,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
+              // Info column
+              Expanded(
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(12, 8, 4, 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        task.title,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context)
+                            .textTheme
+                            .bodyMedium
+                            ?.copyWith(height: 1.3),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        statusText,
+                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                              color: isFailed
+                                  ? scheme.error
+                                  : scheme.onSurfaceVariant,
+                            ),
+                      ),
+                      if (!isCompleted) ...[
+                        const SizedBox(height: 5),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(2),
+                          child: LinearProgressIndicator(
+                            value: progress,
+                            minHeight: 3,
+                            backgroundColor: scheme.surfaceContainerHighest,
                             color: isFailed
                                 ? scheme.error
-                                : scheme.onSurfaceVariant,
+                                : isActive
+                                    ? scheme.primary
+                                    : scheme.outline,
                           ),
-                    ),
-                    if (!isCompleted) ...[
-                      const SizedBox(height: 5),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(2),
-                        child: LinearProgressIndicator(
-                          value: progress,
-                          minHeight: 3,
-                          backgroundColor: scheme.surfaceContainerHighest,
-                          color: isFailed
-                              ? scheme.error
-                              : isActive
-                                  ? scheme.primary
-                                  : scheme.outline,
                         ),
-                      ),
+                      ],
                     ],
+                  ),
+                ),
+              ),
+              // Action buttons
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    if (primaryActionIcon != null)
+                      IconButton(
+                        icon: primaryActionIcon,
+                        onPressed: primaryAction,
+                        visualDensity: VisualDensity.compact,
+                      ),
+                    PopupMenuButton<bool>(
+                      iconSize: 28,
+                      iconColor: scheme.primary,
+                      icon: const Icon(Icons.more_vert),
+                      onSelected: (_) => notifier.deleteDownload(task.gid),
+                      itemBuilder: (context) => [
+                        PopupMenuItem<bool>(
+                          value: true,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                isActive
+                                    ? Icons.cancel_outlined
+                                    : Icons.delete_outline,
+                                size: 18,
+                                color: scheme.error,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                overflowLabel,
+                                style: TextStyle(color: scheme.error),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
               ),
-            ),
-            // Action buttons
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 4),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  if (primaryActionIcon != null)
-                    IconButton(
-                      icon: primaryActionIcon,
-                      onPressed: primaryAction,
-                      visualDensity: VisualDensity.compact,
-                    ),
-                  PopupMenuButton<bool>(
-                    iconSize: 28,
-                    iconColor: scheme.primary,
-                    icon: const Icon(Icons.more_vert),
-                    onSelected: (_) => notifier.deleteDownload(task.gid),
-                    itemBuilder: (context) => [
-                      PopupMenuItem<bool>(
-                        value: true,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              isActive
-                                  ? Icons.cancel_outlined
-                                  : Icons.delete_outline,
-                              size: 18,
-                              color: scheme.error,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              overflowLabel,
-                              style: TextStyle(color: scheme.error),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            // end action buttons Padding
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 }

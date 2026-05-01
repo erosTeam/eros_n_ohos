@@ -909,6 +909,16 @@ class L10n {
     );
   }
 
+  /// `No Results`
+  String get no_result {
+    return Intl.message(
+      'No Results',
+      name: 'no_result',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `Pending`
   String get download_pending {
     return Intl.message(

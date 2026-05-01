@@ -119,6 +119,7 @@
   "download_completed": "Completed",
   "download_failed": "Download Failed",
   "no_downloads": "No Downloads",
+  "no_result": "No Results",
   "download_pending": "Pending",
   "delete": "Delete",
   "download_total_pages": "{count} pages",
