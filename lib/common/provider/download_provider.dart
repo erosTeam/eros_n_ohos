@@ -95,8 +95,62 @@ class DownloadNotifier extends _$DownloadNotifier {
     _processQueue();
   }
 
-  Future<void> deleteDownload(int gid) async {
+  /// Removes all downloaded files and re-queues the gallery for download.
+  /// If the task has no page extension data (e.g. was created from partial
+  /// gallery info), fetches the full gallery detail first.
+  Future<void> redownloadGallery(int gid) async {
+    final task = state[gid];
+    if (task == null) return;
     _pendingQueue.remove(gid);
+    _activeGids.remove(gid);
+    try {
+      final dir = Directory(task.savedDir);
+      if (dir.existsSync()) dir.deleteSync(recursive: true);
+    } catch (e) {
+      logger.e('redownloadGallery dir error: $e');
+    }
+
+    // If page extension list is empty or totalPages is 0, re-fetch page data.
+    String resolvedMediaId = task.mediaId;
+    int resolvedTotalPages = task.totalPages;
+    List<String> resolvedExts = List.from(task.pageExts);
+
+    if (task.pageExts.isEmpty || task.totalPages == 0) {
+      try {
+        final gallery = await getGalleryDetail(
+          url: 'https://nhentai.net/g/$gid/',
+        );
+        final pages = gallery.images.pages;
+        if (pages.isNotEmpty) {
+          resolvedExts = pages.map((p) => NHConst.extMap[p.type] ?? 'jpg').toList();
+          resolvedTotalPages = pages.length;
+          resolvedMediaId = gallery.mediaId ?? task.mediaId;
+        }
+      } catch (e) {
+        logger.e('redownloadGallery: failed to fetch detail for $gid: $e');
+      }
+    }
+
+    final updated = DownloadTask(
+      gid: task.gid,
+      title: task.title,
+      thumbUrl: task.thumbUrl,
+      mediaId: resolvedMediaId,
+      totalPages: resolvedTotalPages,
+      savedDir: task.savedDir,
+      downloadedPages: 0,
+      status: DownloadStatus.pending,
+    );
+    updated.pageExts = resolvedExts;
+
+    await objectBoxHelper.upsertDownloadTask(updated);
+    await objectBoxHelper.updateDownloadProgress(gid, 0, DownloadStatus.pending);
+    state = {...state, gid: updated};
+    _pendingQueue.add(gid);
+    _processQueue();
+  }
+
+  Future<void> deleteDownload(int gid) async {    _pendingQueue.remove(gid);
     _activeGids.remove(gid);
     final task = state[gid];
     if (task != null) {

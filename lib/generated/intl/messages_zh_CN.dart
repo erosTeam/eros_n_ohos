@@ -20,9 +20,11 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'zh_CN';
 
-  static String m0(version) => "需要下载翻译数据,当前版本: ${version}";
+  static String m0(downloaded, total) => "${downloaded} / ${total} 页";
+
   static String m1(count) => "共 ${count} 页";
-  static String m2(downloaded, total) => "${downloaded} / ${total} 页";
+
+  static String m2(version) => "需要下载翻译数据,当前版本: ${version}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -51,8 +53,24 @@ class MessageLookup extends MessageLookupByLibrary {
     "curl_vertical": MessageLookupByLibrary.simpleMessage("垂直(连续)"),
     "custom_layout_width": MessageLookupByLibrary.simpleMessage("自定义布局宽度"),
     "dark": MessageLookupByLibrary.simpleMessage("深色"),
+    "delete": MessageLookupByLibrary.simpleMessage("删除"),
     "display": MessageLookupByLibrary.simpleMessage("显示"),
     "download": MessageLookupByLibrary.simpleMessage("下载"),
+    "download_completed": MessageLookupByLibrary.simpleMessage("已完成"),
+    "download_delete_confirm_message": MessageLookupByLibrary.simpleMessage(
+      "将删除任务记录及所有已下载文件，确认继续？",
+    ),
+    "download_delete_confirm_title": MessageLookupByLibrary.simpleMessage(
+      "删除下载",
+    ),
+    "download_failed": MessageLookupByLibrary.simpleMessage("下载失败"),
+    "download_management": MessageLookupByLibrary.simpleMessage("下载管理"),
+    "download_paused": MessageLookupByLibrary.simpleMessage("已暂停"),
+    "download_pending": MessageLookupByLibrary.simpleMessage("等待中"),
+    "download_progress": m0,
+    "download_redownload": MessageLookupByLibrary.simpleMessage("重新下载"),
+    "download_total_pages": m1,
+    "downloading": MessageLookupByLibrary.simpleMessage("正在下载"),
     "dynamic_color": MessageLookupByLibrary.simpleMessage("动态颜色"),
     "dynamic_color_tip": MessageLookupByLibrary.simpleMessage("根据壁纸自动调整主题颜色"),
     "english": MessageLookupByLibrary.simpleMessage("英语"),
@@ -85,6 +103,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "more_like_this": MessageLookupByLibrary.simpleMessage("更多相似"),
     "never": MessageLookupByLibrary.simpleMessage("从不"),
     "newest": MessageLookupByLibrary.simpleMessage("最新"),
+    "no_downloads": MessageLookupByLibrary.simpleMessage("暂无下载"),
+    "no_result": MessageLookupByLibrary.simpleMessage("无搜索结果"),
     "none": MessageLookupByLibrary.simpleMessage("无"),
     "ok": MessageLookupByLibrary.simpleMessage("确定"),
     "open_supported_links": MessageLookupByLibrary.simpleMessage("打开支持的链接"),
@@ -122,7 +142,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "tag": MessageLookupByLibrary.simpleMessage("标签"),
     "tag_layout_on_item": MessageLookupByLibrary.simpleMessage("列表项标签布局"),
     "tag_translation": MessageLookupByLibrary.simpleMessage("标签翻译"),
-    "tag_translation_tip": m0,
+    "tag_translation_tip": m2,
     "tag_translation_update_failed": MessageLookupByLibrary.simpleMessage(
       "翻译数据更新失败",
     ),
@@ -156,16 +176,5 @@ class MessageLookup extends MessageLookupByLibrary {
     "webtoon": MessageLookupByLibrary.simpleMessage("条漫"),
     "wrap": MessageLookupByLibrary.simpleMessage("换行"),
     "yesterday": MessageLookupByLibrary.simpleMessage("昨天"),
-    "download_management": MessageLookupByLibrary.simpleMessage("下载管理"),
-    "downloading": MessageLookupByLibrary.simpleMessage("正在下载"),
-    "download_paused": MessageLookupByLibrary.simpleMessage("已暂停"),
-    "download_completed": MessageLookupByLibrary.simpleMessage("已完成"),
-    "download_failed": MessageLookupByLibrary.simpleMessage("下载失败"),
-    "no_downloads": MessageLookupByLibrary.simpleMessage("暂无下载"),
-    "no_result": MessageLookupByLibrary.simpleMessage("无搜索结果"),
-    "download_pending": MessageLookupByLibrary.simpleMessage("等待中"),
-    "delete": MessageLookupByLibrary.simpleMessage("删除"),
-    "download_total_pages": m1,
-    "download_progress": m2,
   };
 }

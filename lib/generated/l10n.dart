@@ -861,22 +861,12 @@ class L10n {
 
   /// `Downloading`
   String get downloading {
-    return Intl.message(
-      'Downloading',
-      name: 'downloading',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Downloading', name: 'downloading', desc: '', args: []);
   }
 
   /// `Paused`
   String get download_paused {
-    return Intl.message(
-      'Paused',
-      name: 'download_paused',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Paused', name: 'download_paused', desc: '', args: []);
   }
 
   /// `Completed`
@@ -899,6 +889,36 @@ class L10n {
     );
   }
 
+  /// `Re-download`
+  String get download_redownload {
+    return Intl.message(
+      'Re-download',
+      name: 'download_redownload',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete Download`
+  String get download_delete_confirm_title {
+    return Intl.message(
+      'Delete Download',
+      name: 'download_delete_confirm_title',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `This will delete the task record and all downloaded files. Continue?`
+  String get download_delete_confirm_message {
+    return Intl.message(
+      'This will delete the task record and all downloaded files. Continue?',
+      name: 'download_delete_confirm_message',
+      desc: '',
+      args: [],
+    );
+  }
+
   /// `No Downloads`
   String get no_downloads {
     return Intl.message(
@@ -911,12 +931,7 @@ class L10n {
 
   /// `No Results`
   String get no_result {
-    return Intl.message(
-      'No Results',
-      name: 'no_result',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('No Results', name: 'no_result', desc: '', args: []);
   }
 
   /// `Pending`
@@ -931,12 +946,7 @@ class L10n {
 
   /// `Delete`
   String get delete {
-    return Intl.message(
-      'Delete',
-      name: 'delete',
-      desc: '',
-      args: [],
-    );
+    return Intl.message('Delete', name: 'delete', desc: '', args: []);
   }
 
   /// `{count} pages`

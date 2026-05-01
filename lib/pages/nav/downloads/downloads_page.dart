@@ -414,14 +414,60 @@ class _TaskCard extends ConsumerWidget {
                         onPressed: primaryAction,
                         visualDensity: VisualDensity.compact,
                       ),
-                    PopupMenuButton<bool>(
+                    PopupMenuButton<String>(
                       iconSize: 28,
                       iconColor: scheme.primary,
                       icon: const Icon(Icons.more_vert),
-                      onSelected: (_) => notifier.deleteDownload(task.gid),
+                      onSelected: (value) async {
+                        if (value == 'redownload') {
+                          notifier.redownloadGallery(task.gid);
+                        } else if (value == 'delete') {
+                          final confirmed = await showDialog<bool>(
+                            context: context,
+                            builder: (ctx) => AlertDialog(
+                              title: Text(l.download_delete_confirm_title),
+                              content:
+                                  Text(l.download_delete_confirm_message),
+                              actions: [
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(ctx, false),
+                                  child: Text(l.cancel),
+                                ),
+                                TextButton(
+                                  onPressed: () =>
+                                      Navigator.pop(ctx, true),
+                                  child: Text(
+                                    l.delete,
+                                    style:
+                                        TextStyle(color: scheme.error),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                          if (confirmed == true) {
+                            notifier.deleteDownload(task.gid);
+                          }
+                        }
+                      },
                       itemBuilder: (context) => [
-                        PopupMenuItem<bool>(
-                          value: true,
+                        if (isCompleted)
+                          PopupMenuItem<String>(
+                            value: 'redownload',
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.refresh,
+                                    size: 18,
+                                    color: scheme.primary),
+                                const SizedBox(width: 8),
+                                Text(l.download_redownload),
+                              ],
+                            ),
+                          ),
+                        PopupMenuItem<String>(
+                          value: 'delete',
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [

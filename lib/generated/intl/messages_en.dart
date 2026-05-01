@@ -20,10 +20,12 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
-  static String m0(version) =>
-      "need download tag translation data, version: ${version}";
+  static String m0(downloaded, total) => "${downloaded} / ${total} pages";
+
   static String m1(count) => "${count} pages";
-  static String m2(downloaded, total) => "${downloaded} / ${total} pages";
+
+  static String m2(version) =>
+      "need download tag translation data, version: ${version}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -60,8 +62,24 @@ class MessageLookup extends MessageLookupByLibrary {
       "Custom Layout Width",
     ),
     "dark": MessageLookupByLibrary.simpleMessage("Dark"),
+    "delete": MessageLookupByLibrary.simpleMessage("Delete"),
     "display": MessageLookupByLibrary.simpleMessage("Display"),
     "download": MessageLookupByLibrary.simpleMessage("Download"),
+    "download_completed": MessageLookupByLibrary.simpleMessage("Completed"),
+    "download_delete_confirm_message": MessageLookupByLibrary.simpleMessage(
+      "This will delete the task record and all downloaded files. Continue?",
+    ),
+    "download_delete_confirm_title": MessageLookupByLibrary.simpleMessage(
+      "Delete Download",
+    ),
+    "download_failed": MessageLookupByLibrary.simpleMessage("Download Failed"),
+    "download_management": MessageLookupByLibrary.simpleMessage("Downloads"),
+    "download_paused": MessageLookupByLibrary.simpleMessage("Paused"),
+    "download_pending": MessageLookupByLibrary.simpleMessage("Pending"),
+    "download_progress": m0,
+    "download_redownload": MessageLookupByLibrary.simpleMessage("Re-download"),
+    "download_total_pages": m1,
+    "downloading": MessageLookupByLibrary.simpleMessage("Downloading"),
     "dynamic_color": MessageLookupByLibrary.simpleMessage("Dynamic Color"),
     "dynamic_color_tip": MessageLookupByLibrary.simpleMessage(
       "Color will change according to the wallpaper",
@@ -98,6 +116,8 @@ class MessageLookup extends MessageLookupByLibrary {
     "more_like_this": MessageLookupByLibrary.simpleMessage("More like this"),
     "never": MessageLookupByLibrary.simpleMessage("Never"),
     "newest": MessageLookupByLibrary.simpleMessage("Newest"),
+    "no_downloads": MessageLookupByLibrary.simpleMessage("No Downloads"),
+    "no_result": MessageLookupByLibrary.simpleMessage("No Results"),
     "none": MessageLookupByLibrary.simpleMessage("None"),
     "ok": MessageLookupByLibrary.simpleMessage("OK"),
     "open_supported_links": MessageLookupByLibrary.simpleMessage(
@@ -147,7 +167,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "Tag Layout on Item",
     ),
     "tag_translation": MessageLookupByLibrary.simpleMessage("Tag Translation"),
-    "tag_translation_tip": m0,
+    "tag_translation_tip": m2,
     "tag_translation_update_failed": MessageLookupByLibrary.simpleMessage(
       "Translation data update failed",
     ),
@@ -189,16 +209,5 @@ class MessageLookup extends MessageLookupByLibrary {
     "webtoon": MessageLookupByLibrary.simpleMessage("Webtoon"),
     "wrap": MessageLookupByLibrary.simpleMessage("Wrap"),
     "yesterday": MessageLookupByLibrary.simpleMessage("Yesterday"),
-    "download_management": MessageLookupByLibrary.simpleMessage("Downloads"),
-    "downloading": MessageLookupByLibrary.simpleMessage("Downloading"),
-    "download_paused": MessageLookupByLibrary.simpleMessage("Paused"),
-    "download_completed": MessageLookupByLibrary.simpleMessage("Completed"),
-    "download_failed": MessageLookupByLibrary.simpleMessage("Download Failed"),
-    "no_downloads": MessageLookupByLibrary.simpleMessage("No Downloads"),
-    "no_result": MessageLookupByLibrary.simpleMessage("No Results"),
-    "download_pending": MessageLookupByLibrary.simpleMessage("Pending"),
-    "delete": MessageLookupByLibrary.simpleMessage("Delete"),
-    "download_total_pages": m1,
-    "download_progress": m2,
   };
 }
