@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:eros_n/common/const/const.dart';
 import 'package:eros_n/common/enum.dart';
+import 'package:eros_n/common/provider/download_provider.dart';
 import 'package:eros_n/common/provider/settings_provider.dart';
 import 'package:eros_n/component/models/index.dart';
 import 'package:eros_n/component/widget/eros_cached_network_image.dart';
@@ -8,6 +11,7 @@ import 'package:eros_n/component/widget/preload_photo_view_gallery.dart';
 import 'package:eros_n/pages/gallery/gallery_provider.dart';
 import 'package:eros_n/pages/read/read_provider.dart';
 import 'package:eros_n/pages/read/read_widget.dart';
+import 'package:eros_n/store/db/entity/download_task.dart';
 import 'package:eros_n/utils/get_utils/get_utils.dart';
 import 'package:eros_n/utils/logger.dart';
 import 'package:flutter/material.dart';
@@ -218,6 +222,19 @@ class _ReadListViewState extends ConsumerState<ReadListView> {
   }
 
   Widget buildImage(String imageUrl, {int? index}) {
+    // Prefer local file if this gallery is fully downloaded.
+    final gid = currentGalleryGid;
+    final task = ref.read(downloadProvider)[gid];
+    if (task != null &&
+        task.status == DownloadStatus.completed &&
+        index != null &&
+        index < task.pageExts.length) {
+      final localPath = '${task.savedDir}/${index + 1}.${task.pageExts[index]}';
+      final localFile = File(localPath);
+      if (localFile.existsSync()) {
+        return Image.file(localFile, fit: BoxFit.fitWidth);
+      }
+    }
     return ErosCachedNetworkImage(
       imageUrl: imageUrl,
       fit: BoxFit.fitWidth,
@@ -254,6 +271,13 @@ class _ReadListViewState extends ConsumerState<ReadListView> {
     final ReadNotifier readNotifier = ref.read(readProvider.notifier);
     final pages = ref.watch(galleryProvider(gid).select((g) => g.images.pages));
     final mediaId = ref.watch(galleryProvider(gid).select((g) => g.mediaId));
+    final downloadTask = ref.watch(downloadProvider.select((m) => m[gid]));
+    final isOfflineComplete = downloadTask != null &&
+        downloadTask.status == DownloadStatus.completed &&
+        downloadTask.totalPages > 0;
+    final pageCount = pages.isNotEmpty
+        ? pages.length
+        : (isOfflineComplete ? downloadTask.totalPages : 0);
 
     Widget listView = ScrollablePositionedList.separated(
       minCacheExtent: 0.0,
@@ -264,21 +288,39 @@ class _ReadListViewState extends ConsumerState<ReadListView> {
       ),
       itemScrollController: readNotifier.itemScrollController,
       itemPositionsListener: readNotifier.itemPositionsListener,
-      itemCount: pages.length,
+      itemCount: pageCount,
       itemBuilder: (context, index) {
-        final GalleryImage page = pages[index];
-        final imageUrl = getGalleryImageUrl(
-          mediaId ?? '',
-          index,
-          NHConst.extMap[page.type] ?? '',
-        );
+        final String imageUrl;
+        if (pages.isNotEmpty) {
+          final GalleryImage page = pages[index];
+          imageUrl = getGalleryImageUrl(
+            mediaId ?? '',
+            index,
+            NHConst.extMap[page.type] ?? '',
+          );
+        } else {
+          final task = downloadTask;
+          if (task != null) {
+            final ext = index < task.pageExts.length ? task.pageExts[index] : 'jpg';
+            imageUrl = getGalleryImageUrl(task.mediaId, index, ext);
+          } else {
+            imageUrl = '';
+          }
+        }
 
         ref.read(readProvider.notifier).getCompleter(index);
 
         Widget image = buildImage(imageUrl, index: index);
 
+        final double aspectRatio;
+        if (pages.isNotEmpty) {
+          final page = pages[index];
+          aspectRatio = (page.imgWidth ?? 300) / (page.imgHeight ?? 400);
+        } else {
+          aspectRatio = 300 / 400;
+        }
         image = AspectRatio(
-          aspectRatio: (page.imgWidth ?? 300) / (page.imgHeight ?? 400),
+          aspectRatio: aspectRatio,
           child: image,
         );
 
@@ -336,6 +378,16 @@ class ReadPageView extends HookConsumerWidget {
           galleryProvider(gid).select((g) => g.mediaId),
         );
 
+        final downloadTask = ref.watch(
+          downloadProvider.select((m) => m[gid]),
+        );
+        final isOfflineComplete = downloadTask != null &&
+            downloadTask.status == DownloadStatus.completed &&
+            downloadTask.totalPages > 0;
+        final pageCount = pages.isNotEmpty
+            ? pages.length
+            : (isOfflineComplete ? downloadTask.totalPages : 0);
+
         final preloadPagesCount = ref.watch(
           settingsProvider.select((s) => s.preloadPagesCount),
         );
@@ -351,17 +403,45 @@ class ReadPageView extends HookConsumerWidget {
           scrollDirection: scrollDirection,
           wantKeepAlive: false,
           builder: (BuildContext context, int index) {
-            final imageUrl = getGalleryImageUrl(
-              mediaId ?? '',
-              index,
-              NHConst.extMap[pages[index].type] ?? '',
-            );
+            final String imageUrl;
+            if (pages.isNotEmpty) {
+              imageUrl = getGalleryImageUrl(
+                mediaId ?? '',
+                index,
+                NHConst.extMap[pages[index].type] ?? '',
+              );
+            } else {
+              final task = downloadTask;
+              if (task != null) {
+                final ext = index < task.pageExts.length ? task.pageExts[index] : 'jpg';
+                imageUrl = getGalleryImageUrl(task.mediaId, index, ext);
+              } else {
+                imageUrl = '';
+              }
+            }
 
             final completer = ref
                 .read(readProvider.notifier)
                 .getCompleter(index);
 
-            final imageProvider = getErosImageProvider(imageUrl);
+            // Prefer local file if this gallery is fully downloaded.
+            // Re-read for the builder closure (uses the outer downloadTask from watch).
+            final localTask = downloadTask;
+            ImageProvider imageProvider;
+            if (localTask != null &&
+                localTask.status == DownloadStatus.completed &&
+                index < localTask.pageExts.length) {
+              final localPath =
+                  '${localTask.savedDir}/${index + 1}.${localTask.pageExts[index]}';
+              final localFile = File(localPath);
+              if (localFile.existsSync()) {
+                imageProvider = FileImage(localFile);
+              } else {
+                imageProvider = getErosImageProvider(imageUrl);
+              }
+            } else {
+              imageProvider = getErosImageProvider(imageUrl);
+            }
 
             imageProvider
                 .resolve(const ImageConfiguration())
@@ -395,7 +475,7 @@ class ReadPageView extends HookConsumerWidget {
           reverse: reverse,
           customSize: MediaQuery.of(context).size,
           preloadPagesCount: preloadPagesCount,
-          itemCount: pages.length,
+          itemCount: pageCount,
           loadingBuilder: (context, event) => Center(
             child: CircularProgressIndicator(
               value: event == null

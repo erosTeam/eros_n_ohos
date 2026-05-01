@@ -21,6 +21,8 @@ class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'zh_CN';
 
   static String m0(version) => "需要下载翻译数据,当前版本: ${version}";
+  static String m1(count) => "共 ${count} 页";
+  static String m2(downloaded, total) => "${downloaded} / ${total} 页";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -154,5 +156,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "webtoon": MessageLookupByLibrary.simpleMessage("条漫"),
     "wrap": MessageLookupByLibrary.simpleMessage("换行"),
     "yesterday": MessageLookupByLibrary.simpleMessage("昨天"),
+    "download_management": MessageLookupByLibrary.simpleMessage("下载管理"),
+    "downloading": MessageLookupByLibrary.simpleMessage("正在下载"),
+    "download_paused": MessageLookupByLibrary.simpleMessage("已暂停"),
+    "download_completed": MessageLookupByLibrary.simpleMessage("已完成"),
+    "download_failed": MessageLookupByLibrary.simpleMessage("下载失败"),
+    "no_downloads": MessageLookupByLibrary.simpleMessage("暂无下载"),
+    "download_pending": MessageLookupByLibrary.simpleMessage("等待中"),
+    "delete": MessageLookupByLibrary.simpleMessage("删除"),
+    "download_total_pages": m1,
+    "download_progress": m2,
   };
 }

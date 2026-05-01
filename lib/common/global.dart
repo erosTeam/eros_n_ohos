@@ -37,6 +37,7 @@ class Global {
   static String tempPath = '';
   static late String extStorePath;
   static String dbPath = '';
+  static String downloadsPath = '';
 
   static late PersistCookieJar cookieJar;
 
@@ -56,6 +57,18 @@ class Global {
   }
 
   static late PackageInfo packageInfo;
+
+  static Future<String> resolveDownloadsPath(String customPath) async {
+    if (customPath.isNotEmpty) return customPath;
+    if (Platform.isIOS) return '$appDocPath/downloads';
+    if (Platform.isAndroid) {
+      try {
+        final ext = await getExternalStorageDirectory();
+        if (ext != null) return '${ext.path}/Eros-N';
+      } catch (_) {}
+    }
+    return '$appDocPath/downloads';
+  }
 
   static Future<void> init() async {
     try {
@@ -127,6 +140,8 @@ class Global {
     } catch (e) {
       debugPrint('[Global] objectBoxHelper.init failed: $e');
     }
+
+    downloadsPath = await resolveDownloadsPath('');
 
     userAgent = hiveHelper.getUserAgent();
     userAgent ??= NHConst.userAgent;

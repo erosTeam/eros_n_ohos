@@ -22,6 +22,8 @@ class MessageLookup extends MessageLookupByLibrary {
 
   static String m0(version) =>
       "need download tag translation data, version: ${version}";
+  static String m1(count) => "${count} pages";
+  static String m2(downloaded, total) => "${downloaded} / ${total} pages";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
@@ -187,5 +189,15 @@ class MessageLookup extends MessageLookupByLibrary {
     "webtoon": MessageLookupByLibrary.simpleMessage("Webtoon"),
     "wrap": MessageLookupByLibrary.simpleMessage("Wrap"),
     "yesterday": MessageLookupByLibrary.simpleMessage("Yesterday"),
+    "download_management": MessageLookupByLibrary.simpleMessage("Downloads"),
+    "downloading": MessageLookupByLibrary.simpleMessage("Downloading"),
+    "download_paused": MessageLookupByLibrary.simpleMessage("Paused"),
+    "download_completed": MessageLookupByLibrary.simpleMessage("Completed"),
+    "download_failed": MessageLookupByLibrary.simpleMessage("Download Failed"),
+    "no_downloads": MessageLookupByLibrary.simpleMessage("No Downloads"),
+    "download_pending": MessageLookupByLibrary.simpleMessage("Pending"),
+    "delete": MessageLookupByLibrary.simpleMessage("Delete"),
+    "download_total_pages": m1,
+    "download_progress": m2,
   };
 }

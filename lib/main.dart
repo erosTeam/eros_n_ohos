@@ -11,6 +11,7 @@ import 'package:eros_n/component/widget/system_ui_overlay.dart';
 import 'package:eros_n/generated/l10n.dart';
 import 'package:eros_n/network/webview_proxy/hidden_webview_proxy.dart';
 import 'package:eros_n/routes/routes.dart';
+import 'package:eros_n/utils/dev_logger.dart' as devlog;
 import 'package:eros_n/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -24,6 +25,17 @@ import 'package:window_manager/window_manager.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
+  // Redirect Flutter framework errors (e.g. layout overflows) to logger so
+  // they appear in `bash dev.sh --log` output.
+  FlutterError.onError = (details) {
+    logger.e(
+      'FlutterError: ${details.exceptionAsString()}',
+      error: details.exception,
+      stackTrace: details.stack,
+    );
+    FlutterError.presentError(details);
+  };
+
   if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
     await windowManager.ensureInitialized();
   }
@@ -33,6 +45,7 @@ Future<void> main() async {
     await InAppWebViewController.setWebContentsDebuggingEnabled(true);
   }
 
+  await devlog.initDevLogger();
   await Global.init();
   await LiquidGlassWidgets.initialize();
 

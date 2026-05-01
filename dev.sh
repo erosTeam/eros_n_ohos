@@ -41,6 +41,8 @@ case "$1" in
     python3 "$PROJ/scripts/huawei_sign.py" --no-build --force-profile
     ;;
   *)
+    "$HDC" shell "power-shell wakeup" 2>/dev/null || true
+    "$HDC" shell "power-shell timeout -o 3600000" 2>/dev/null || true
     python3 "$PROJ/scripts/huawei_sign.py" "$@"
     ;;
 esac

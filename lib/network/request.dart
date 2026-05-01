@@ -707,12 +707,15 @@ Future<void> nhDownload({
   }
   logger.t('downloadUrl $downloadUrl');
 
-  // Anything served by nhentai.net itself is behind Cloudflare and would
+  // Anything served by nhentai.net *itself* is behind Cloudflare and would
   // get blocked if dio streamed it directly. Pull it through the hidden
   // WebView proxy so the request inherits the browser's TLS fingerprint
   // and session cookies (needed for /g/{id}/download).
+  // Image CDN subdomains (i.nhentai.net, t.nhentai.net) are NOT behind the
+  // challenge and are already accessible via Dio; routing them through the
+  // proxy would trigger a cross-origin fetch error inside the WebView.
   final downloadUri = Uri.parse(downloadUrl);
-  final viaProxy = downloadUri.host.endsWith('nhentai.net');
+  final viaProxy = downloadUri.host == 'nhentai.net';
 
   try {
     if (viaProxy) {

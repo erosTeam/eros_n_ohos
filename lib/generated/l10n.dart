@@ -848,6 +848,106 @@ class L10n {
       args: [],
     );
   }
+
+  /// `Downloads`
+  String get download_management {
+    return Intl.message(
+      'Downloads',
+      name: 'download_management',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Downloading`
+  String get downloading {
+    return Intl.message(
+      'Downloading',
+      name: 'downloading',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Paused`
+  String get download_paused {
+    return Intl.message(
+      'Paused',
+      name: 'download_paused',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Completed`
+  String get download_completed {
+    return Intl.message(
+      'Completed',
+      name: 'download_completed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Download Failed`
+  String get download_failed {
+    return Intl.message(
+      'Download Failed',
+      name: 'download_failed',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `No Downloads`
+  String get no_downloads {
+    return Intl.message(
+      'No Downloads',
+      name: 'no_downloads',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Pending`
+  String get download_pending {
+    return Intl.message(
+      'Pending',
+      name: 'download_pending',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `Delete`
+  String get delete {
+    return Intl.message(
+      'Delete',
+      name: 'delete',
+      desc: '',
+      args: [],
+    );
+  }
+
+  /// `{count} pages`
+  String download_total_pages(Object count) {
+    return Intl.message(
+      '$count pages',
+      name: 'download_total_pages',
+      desc: '',
+      args: [count],
+    );
+  }
+
+  /// `{downloaded} / {total} pages`
+  String download_progress(Object downloaded, Object total) {
+    return Intl.message(
+      '$downloaded / $total pages',
+      name: 'download_progress',
+      desc: '',
+      args: [downloaded, total],
+    );
+  }
 }
 
 class AppLocalizationDelegate extends LocalizationsDelegate<L10n> {

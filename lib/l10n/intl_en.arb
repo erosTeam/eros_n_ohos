@@ -112,5 +112,26 @@
   "show_less": "Showing less",
   "show_more": "Showing more",
   "pinch_to_zoom_hint": "You can also pinch to adjust on the page",
-  "liquid_glass": "Liquid Glass"
+  "liquid_glass": "Liquid Glass",
+  "download_management": "Downloads",
+  "downloading": "Downloading",
+  "download_paused": "Paused",
+  "download_completed": "Completed",
+  "download_failed": "Download Failed",
+  "no_downloads": "No Downloads",
+  "download_pending": "Pending",
+  "delete": "Delete",
+  "download_total_pages": "{count} pages",
+  "@download_total_pages": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "download_progress": "{downloaded} / {total} pages",
+  "@download_progress": {
+    "placeholders": {
+      "downloaded": {},
+      "total": {}
+    }
+  }
 }

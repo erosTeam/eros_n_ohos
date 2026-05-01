@@ -112,5 +112,26 @@
   "show_less": "显示更少内容",
   "show_more": "显示更多内容",
   "pinch_to_zoom_hint": "也可以在页面上双指缩放调整",
-  "liquid_glass": "液态玻璃"
+  "liquid_glass": "液态玻璃",
+  "download_management": "下载管理",
+  "downloading": "正在下载",
+  "download_paused": "已暂停",
+  "download_completed": "已完成",
+  "download_failed": "下载失败",
+  "no_downloads": "暂无下载",
+  "download_pending": "等待中",
+  "delete": "删除",
+  "download_total_pages": "共 {count} 页",
+  "@download_total_pages": {
+    "placeholders": {
+      "count": {}
+    }
+  },
+  "download_progress": "{downloaded} / {total} 页",
+  "@download_progress": {
+    "placeholders": {
+      "downloaded": {},
+      "total": {}
+    }
+  }
 }

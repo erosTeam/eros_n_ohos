@@ -1,15 +1,15 @@
 import 'package:eros_n/component/models/tag.dart';
 import 'package:eros_n/store/db/db_store.dart';
+import 'package:eros_n/store/db/entity/download_task.dart';
 import 'package:eros_n/store/db/entity/gallery_history.dart';
 import 'package:eros_n/store/db/entity/nh_tag.dart';
 import 'package:eros_n/store/db/entity/tag_translate.dart';
 import 'package:eros_n/utils/eros_utils.dart';
 import 'package:eros_n/utils/logger.dart';
 import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
 import 'package:sqflite/sqflite.dart';
 
-const int _kDbVersion = 2;
+const int _kDbVersion = 3;
 
 class SqliteDbStore implements DbStore {
   Database? _db;
@@ -27,24 +27,40 @@ class SqliteDbStore implements DbStore {
 
   @override
   Future<void> init({String? path}) async {
-    final dbPath = path != null
-        ? p.join(path, 'eros_n.db')
-        : await _resolveDbPath();
-    _db = await openDatabase(
-      dbPath,
-      version: _kDbVersion,
-      onCreate: _onCreate,
-      onUpgrade: _onUpgrade,
-    );
-    _isInitialized = true;
+    String dbPath;
+    try {
+      dbPath = path != null ? p.join(path, 'eros_n.db') : await _resolveDbPath();
+    } catch (e) {
+      logger.e('[SqliteDbStore] _resolveDbPath failed: $e');
+      dbPath = 'eros_n.db';
+    }
+    logger.d('[SqliteDbStore] opening DB at: $dbPath');
+    try {
+      _db = await openDatabase(
+        dbPath,
+        version: _kDbVersion,
+        onCreate: _onCreate,
+        onUpgrade: _onUpgrade,
+      );
+      _isInitialized = true;
+      logger.d('[SqliteDbStore] DB opened OK, isInitialized=$_isInitialized');
+    } catch (e, st) {
+      logger.e('[SqliteDbStore] openDatabase failed: $e\n$st');
+      rethrow;
+    }
   }
 
   Future<String> _resolveDbPath() async {
+    // sqflite on HarmonyOS uses getDatabasesPath() internally for relative paths.
+    // Using getApplicationSupportDirectory() gives a path the native RDB API
+    // cannot resolve correctly. Fall back to just the filename so sqflite
+    // resolves it via getDatabasesPath() internally.
     try {
-      final dir = await getApplicationSupportDirectory();
-      return p.join(dir.path, 'eros_n.db');
+      final dbsDir = await getDatabasesPath();
+      logger.d('[SqliteDbStore] getDatabasesPath=$dbsDir');
+      return p.join(dbsDir, 'eros_n.db');
     } catch (_) {
-      return '/data/storage/el2/base/haps/entry/files/eros_n.db';
+      return 'eros_n.db';
     }
   }
 
@@ -93,6 +109,20 @@ class SqliteDbStore implements DbStore {
     await db.execute(
       'CREATE INDEX idx_nh_translateName ON nh_tag(translateName)',
     );
+
+    await db.execute('''
+      CREATE TABLE download_task (
+        gid             INTEGER PRIMARY KEY,
+        title           TEXT NOT NULL DEFAULT '',
+        thumbUrl        TEXT NOT NULL DEFAULT '',
+        mediaId         TEXT NOT NULL DEFAULT '',
+        totalPages      INTEGER NOT NULL DEFAULT 0,
+        downloadedPages INTEGER NOT NULL DEFAULT 0,
+        status          TEXT NOT NULL DEFAULT 'pending',
+        savedDir        TEXT NOT NULL DEFAULT '',
+        pageExts        TEXT NOT NULL DEFAULT '[]'
+      )
+    ''');
   }
 
   Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
@@ -100,6 +130,21 @@ class SqliteDbStore implements DbStore {
       await db.execute(
         'ALTER TABLE gallery_history ADD COLUMN lastReadIndex INTEGER',
       );
+    }
+    if (oldVersion < 3) {
+      await db.execute('''
+        CREATE TABLE IF NOT EXISTS download_task (
+          gid             INTEGER PRIMARY KEY,
+          title           TEXT NOT NULL DEFAULT '',
+          thumbUrl        TEXT NOT NULL DEFAULT '',
+          mediaId         TEXT NOT NULL DEFAULT '',
+          totalPages      INTEGER NOT NULL DEFAULT 0,
+          downloadedPages INTEGER NOT NULL DEFAULT 0,
+          status          TEXT NOT NULL DEFAULT 'pending',
+          savedDir        TEXT NOT NULL DEFAULT '',
+          pageExts        TEXT NOT NULL DEFAULT '[]'
+        )
+      ''');
     }
   }
 
@@ -382,6 +427,48 @@ class SqliteDbStore implements DbStore {
         lastUseTime: existing?.lastUseTime ?? 0,
       ));
     }
+  }
+
+  // ---------------------------------------------------------------------------
+  // DownloadTask
+  // ---------------------------------------------------------------------------
+
+  @override
+  Future<List<DownloadTask>> getAllDownloadTasks() async {
+    final rows = await _database.query('download_task');
+    return rows.map(DownloadTask.fromMap).toList();
+  }
+
+  @override
+  Future<void> upsertDownloadTask(DownloadTask task) async {
+    await _database.insert(
+      'download_task',
+      task.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+  }
+
+  @override
+  Future<void> deleteDownloadTask(int gid) async {
+    await _database.delete(
+      'download_task',
+      where: 'gid = ?',
+      whereArgs: [gid],
+    );
+  }
+
+  @override
+  Future<void> updateDownloadProgress(
+    int gid,
+    int downloadedPages,
+    DownloadStatus status,
+  ) async {
+    await _database.update(
+      'download_task',
+      {'downloadedPages': downloadedPages, 'status': status.name},
+      where: 'gid = ?',
+      whereArgs: [gid],
+    );
   }
 
   // ---------------------------------------------------------------------------
