@@ -20,8 +20,40 @@ class DownloadNotifier extends _$DownloadNotifier {
 
   @override
   Map<int, DownloadTask> build() {
+    // React to gallery concurrency limit changes immediately.
+    ref.listen(
+      settingsProvider,
+      (prev, next) {
+        final prevMax = prev?.maxConcurrentGalleries;
+        final nextMax = next.maxConcurrentGalleries;
+        if (prevMax == null || prevMax == nextMax) return;
+        if (nextMax > prevMax) {
+          _processQueue();
+        } else {
+          _applyGalleryConcurrencyLimit(nextMax);
+        }
+      },
+    );
     _loadFromDb();
     return {};
+  }
+
+  /// Signals excess active galleries to stop and re-queues them at the front
+  /// so they resume automatically when a slot opens.
+  void _applyGalleryConcurrencyLimit(int maxGalleries) {
+    while (_activeGids.length > maxGalleries) {
+      final gid = _activeGids.last;
+      _activeGids.remove(gid);
+      final task = state[gid];
+      if (task != null && task.status == DownloadStatus.downloading) {
+        state = {...state, gid: task.copyWith(status: DownloadStatus.pending)};
+        objectBoxHelper.updateDownloadProgress(
+            gid, task.downloadedPages, DownloadStatus.pending);
+        if (!_pendingQueue.contains(gid)) {
+          _pendingQueue.insert(0, gid);
+        }
+      }
+    }
   }
 
   Future<void> _loadFromDb() async {
@@ -200,7 +232,6 @@ class DownloadNotifier extends _$DownloadNotifier {
     try {
       await Directory(task.savedDir).create(recursive: true);
 
-      final maxPages = ref.read(settingsProvider).maxConcurrentPages;
       final total = task.totalPages;
 
       // Build list of pages that still need downloading (resume support).
@@ -214,33 +245,15 @@ class DownloadNotifier extends _$DownloadNotifier {
         }
       }
 
-      // Process in batches of maxPages concurrent downloads.
-      for (var start = 0; start < pending.length; start += maxPages) {
-        // Check if paused/deleted mid-download.
-        final current = state[gid];
-        if (current == null || current.status != DownloadStatus.downloading) {
-          _activeGids.remove(gid);
-          return;
-        }
+      // Sliding-window pool: keeps maxConcurrentPages slots filled at all times.
+      await _runPagePool(gid, pending);
 
-        final end = (start + maxPages).clamp(0, pending.length);
-        final batch = pending.sublist(start, end);
-        await Future.wait(
-          batch.map((idx) => _downloadPage(gid, idx)),
-          eagerError: false,
-        );
-
-        // Update progress after each batch.
-        final taskNow = state[gid];
-        if (taskNow != null) {
-          final downloaded = _countDownloaded(taskNow);
-          await objectBoxHelper.updateDownloadProgress(
-              gid, downloaded, DownloadStatus.downloading);
-          state = {
-            ...state,
-            gid: taskNow.copyWith(downloadedPages: downloaded),
-          };
-        }
+      // If task was paused/cancelled mid-pool, exit without marking failed.
+      final taskAfterPool = state[gid];
+      if (taskAfterPool == null ||
+          taskAfterPool.status != DownloadStatus.downloading) {
+        _activeGids.remove(gid);
+        return;
       }
 
       // Final check: count actual files.
@@ -275,6 +288,53 @@ class DownloadNotifier extends _$DownloadNotifier {
       _activeGids.remove(gid);
       _processQueue();
     }
+  }
+
+  /// Sliding-window concurrent page download pool.
+  /// Keeps up to [maxConcurrentPages] slots busy at all times.
+  /// Re-reads the setting on every slot refill so limit changes take effect
+  /// without restarting the gallery.
+  Future<void> _runPagePool(int gid, List<int> pending) {
+    if (pending.isEmpty) return Future.value();
+
+    final completer = Completer<void>();
+    var active = 0;
+    var queueIdx = 0;
+
+    void fill() {
+      final cur = state[gid];
+      if (cur == null || cur.status != DownloadStatus.downloading) {
+        if (active == 0 && !completer.isCompleted) completer.complete();
+        return;
+      }
+
+      final maxSlots = ref.read(settingsProvider).maxConcurrentPages;
+      while (active < maxSlots && queueIdx < pending.length) {
+        final idx = pending[queueIdx++];
+        active++;
+        _downloadPage(gid, idx).whenComplete(() {
+          active--;
+          _updateDownloadProgress(gid);
+          fill();
+        });
+      }
+
+      if (queueIdx >= pending.length && active == 0 && !completer.isCompleted) {
+        completer.complete();
+      }
+    }
+
+    fill();
+    return completer.future;
+  }
+
+  void _updateDownloadProgress(int gid) {
+    final task = state[gid];
+    if (task == null) return;
+    final downloaded = _countDownloaded(task);
+    objectBoxHelper.updateDownloadProgress(
+        gid, downloaded, DownloadStatus.downloading);
+    state = {...state, gid: task.copyWith(downloadedPages: downloaded)};
   }
 
   int _countDownloaded(DownloadTask task) {
