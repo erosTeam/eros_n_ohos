@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:auto_route/auto_route.dart';
 import 'package:eros_n/common/global.dart';
-import 'package:eros_n/utils/logger.dart';
 import 'package:eros_n/common/provider/download_provider.dart';
 import 'package:eros_n/component/widget/adaptive_app_bar.dart';
 import 'package:eros_n/component/widget/eros_cached_network_image.dart';
@@ -8,10 +9,22 @@ import 'package:eros_n/generated/l10n.dart';
 import 'package:eros_n/pages/gallery/gallery_provider.dart';
 import 'package:eros_n/routes/routes.dart';
 import 'package:eros_n/store/db/entity/download_task.dart';
+import 'package:eros_n/utils/logger.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:sliver_tools/sliver_tools.dart';
+
+// ---------------------------------------------------------------------------
+// Sort mode
+// ---------------------------------------------------------------------------
+
+enum _SortMode { dateNewest, dateOldest, titleAz, titleZa }
+
+// ---------------------------------------------------------------------------
+// Page
+// ---------------------------------------------------------------------------
 
 @RoutePage()
 class DownloadsPage extends HookConsumerWidget {
@@ -26,13 +39,36 @@ class DownloadsPage extends HookConsumerWidget {
     final searchActive = useState(false);
     final searchQuery = useState('');
     final searchController = useTextEditingController();
+    final sortMode = useState(_SortMode.dateNewest);
 
-    bool matchesQuery(DownloadTask t) =>
-        searchQuery.value.isEmpty ||
-        t.title.toLowerCase().contains(searchQuery.value.toLowerCase());
+    bool matchesQuery(DownloadTask t) {
+      final q = searchQuery.value.toLowerCase();
+      if (q.isEmpty) return true;
+      if (t.title.toLowerCase().contains(q)) return true;
+      if (t.gid.toString().contains(q)) return true;
+      return false;
+    }
 
-    List<DownloadTask> sorted(Iterable<DownloadTask> src) =>
-        src.toList()..sort((a, b) => b.gid.compareTo(a.gid));
+    List<DownloadTask> sorted(Iterable<DownloadTask> src) {
+      final list = src.toList();
+      switch (sortMode.value) {
+        case _SortMode.dateNewest:
+          list.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+        case _SortMode.dateOldest:
+          list.sort((a, b) => a.createdAt.compareTo(b.createdAt));
+        case _SortMode.titleAz:
+          list.sort((a, b) => a.title.compareTo(b.title));
+        case _SortMode.titleZa:
+          list.sort((a, b) => b.title.compareTo(a.title));
+      }
+      // Within the active section, put actually-downloading tasks before pending.
+      list.sort((a, b) {
+        final aScore = a.status == DownloadStatus.downloading ? 0 : 1;
+        final bScore = b.status == DownloadStatus.downloading ? 0 : 1;
+        return aScore.compareTo(bScore);
+      });
+      return list;
+    }
 
     final downloading = sorted(tasks.values.where((t) =>
         (t.status == DownloadStatus.downloading ||
@@ -57,6 +93,13 @@ class DownloadsPage extends HookConsumerWidget {
       searchQuery.value = '';
       searchController.clear();
     }
+
+    String sortLabel(_SortMode mode) => switch (mode) {
+          _SortMode.dateNewest => l.sort_date_newest,
+          _SortMode.dateOldest => l.sort_date_oldest,
+          _SortMode.titleAz => l.sort_title_az,
+          _SortMode.titleZa => l.sort_title_za,
+        };
 
     final appBar = adaptiveAppBar(
       context: context,
@@ -85,6 +128,32 @@ class DownloadsPage extends HookConsumerWidget {
               IconButton(
                 icon: const Icon(Icons.search),
                 onPressed: activateSearch,
+              ),
+              PopupMenuButton<_SortMode>(
+                icon: const Icon(Icons.sort),
+                tooltip: l.sort_by,
+                initialValue: sortMode.value,
+                onSelected: (mode) => sortMode.value = mode,
+                itemBuilder: (context) => _SortMode.values
+                    .map(
+                      (mode) => PopupMenuItem<_SortMode>(
+                        value: mode,
+                        child: Row(
+                          children: [
+                            if (sortMode.value == mode)
+                              Icon(Icons.check,
+                                  size: 16,
+                                  color:
+                                      Theme.of(context).colorScheme.primary)
+                            else
+                              const SizedBox(width: 16),
+                            const SizedBox(width: 8),
+                            Text(sortLabel(mode)),
+                          ],
+                        ),
+                      ),
+                    )
+                    .toList(),
               ),
               IconButton(
                 icon: const Icon(Icons.settings_outlined),
@@ -181,7 +250,7 @@ class _NoResultsState extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.search_off_outlined,
+            Icons.search_off,
             size: 64,
             color: Theme.of(context).colorScheme.outlineVariant,
           ),
@@ -303,6 +372,15 @@ class _TaskCard extends ConsumerWidget {
       statusText = l.download_progress(task.downloadedPages, task.totalPages);
     }
 
+    // Date label — skip for legacy tasks with createdAt == 0
+    final String? dateText = task.createdAt > 0
+        ? l.added_on(
+            DateFormat('yyyy-MM-dd').format(
+              DateTime.fromMillisecondsSinceEpoch(task.createdAt),
+            ),
+          )
+        : null;
+
     // Primary action
     Widget? primaryActionIcon;
     VoidCallback? primaryAction;
@@ -331,6 +409,26 @@ class _TaskCard extends ConsumerWidget {
       RouteUtil.goGalleryByGid(ref, task.gid);
     }
 
+    // Thumbnail: for completed tasks, prefer the local first page file.
+    Widget buildThumb() {
+      if (isCompleted &&
+          task.pageExts.isNotEmpty &&
+          task.savedDir.isNotEmpty) {
+        final localPath = '${task.savedDir}/1.${task.pageExts[0]}';
+        final localFile = File(localPath);
+        if (localFile.existsSync()) {
+          return Image.file(
+            localFile,
+            fit: BoxFit.cover,
+            width: 60,
+            height: double.infinity,
+            errorBuilder: (_, __, ___) => _networkThumb(task, scheme),
+          );
+        }
+      }
+      return _networkThumb(task, scheme);
+    }
+
     return Card(
       elevation: 0,
       clipBehavior: Clip.antiAlias,
@@ -346,15 +444,7 @@ class _TaskCard extends ConsumerWidget {
               // Thumbnail — touches card edges on left/top/bottom
               InkWell(
                 onTap: openGallery,
-                child: SizedBox(
-                  width: 60,
-                  child: task.thumbUrl.isNotEmpty
-                      ? ErosCachedNetworkImage(
-                          imageUrl: task.thumbUrl,
-                          fit: BoxFit.cover,
-                        )
-                      : ColoredBox(color: scheme.surfaceContainerHighest),
-                ),
+                child: SizedBox(width: 60, child: buildThumb()),
               ),
               // Info column
               Expanded(
@@ -374,13 +464,42 @@ class _TaskCard extends ConsumerWidget {
                             ?.copyWith(height: 1.3),
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        statusText,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isFailed
-                                  ? scheme.error
-                                  : scheme.onSurfaceVariant,
+                      Row(
+                        children: [
+                          Text(
+                            statusText,
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodySmall
+                                ?.copyWith(
+                                  color: isFailed
+                                      ? scheme.error
+                                      : scheme.onSurfaceVariant,
+                                ),
+                          ),
+                          if (dateText != null) ...[
+                            Text(
+                              ' · ',
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: scheme.onSurfaceVariant
+                                        .withValues(alpha: 0.7),
+                                  ),
                             ),
+                            Text(
+                              dateText,
+                              style: Theme.of(context)
+                                  .textTheme
+                                  .labelSmall
+                                  ?.copyWith(
+                                    color: scheme.onSurfaceVariant
+                                        .withValues(alpha: 0.7),
+                                  ),
+                            ),
+                          ],
+                        ],
                       ),
                       if (!isCompleted) ...[
                         const SizedBox(height: 5),
@@ -459,8 +578,7 @@ class _TaskCard extends ConsumerWidget {
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 Icon(Icons.refresh,
-                                    size: 18,
-                                    color: scheme.primary),
+                                    size: 18, color: scheme.primary),
                                 const SizedBox(width: 8),
                                 Text(l.download_redownload),
                               ],
@@ -497,4 +615,15 @@ class _TaskCard extends ConsumerWidget {
       ),
     );
   }
+}
+
+Widget _networkThumb(DownloadTask task, ColorScheme scheme) {
+  return task.thumbUrl.isNotEmpty
+      ? ErosCachedNetworkImage(
+          imageUrl: task.thumbUrl,
+          fit: BoxFit.cover,
+          width: 60,
+          height: double.infinity,
+        )
+      : ColoredBox(color: scheme.surfaceContainerHighest);
 }

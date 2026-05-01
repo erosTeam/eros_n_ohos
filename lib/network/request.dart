@@ -699,7 +699,13 @@ Future<void> nhDownload({
   ProgressCallback? progressCallback,
 }) async {
   late final String downloadUrl;
-  DioHttpClient dioHttpClient = DioHttpClient(dioConfig: globalDioConfig);
+  // Use longer timeouts for CDN image downloads — under high concurrency the
+  // CDN can take >10 s to start responding, which is the default connectTimeout.
+  final downloadDioConfig = globalDioConfig.copyWith(
+    connectTimeout: 30000,
+    receiveTimeout: 60000,
+  );
+  DioHttpClient dioHttpClient = DioHttpClient(dioConfig: downloadDioConfig);
   if (!url.startsWith(RegExp(r'https?://'))) {
     downloadUrl = '${NHConst.baseUrl}$url';
   } else {

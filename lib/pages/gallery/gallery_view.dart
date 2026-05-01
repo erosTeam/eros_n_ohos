@@ -1343,7 +1343,7 @@ class ToolBarView extends HookConsumerWidget {
                   strokeWidth: 3.0,
                 ),
               ),
-              Icon(Icons.download, size: iconSize * 0.65),
+              const Icon(Icons.download, size: iconSize * 0.65),
             ],
           );
           downloadOnPressed = () => erosRouter.push(const DownloadsRoute());

@@ -20,18 +20,27 @@ typedef String MessageIfAbsent(String messageStr, List<dynamic> args);
 class MessageLookup extends MessageLookupByLibrary {
   String get localeName => 'en';
 
-  static String m0(downloaded, total) => "${downloaded} / ${total} pages";
+  static String m0(date) => "Added ${date}";
 
-  static String m1(count) => "${count} pages";
+  static String m1(total, galleries, pages) =>
+      "Total concurrent requests: ${total} (${galleries} × ${pages}). Very likely to trigger a temporary CDN ban, causing download failures and broken thumbnails. Reduce concurrency.";
 
-  static String m2(error) => "Failed to update favorite: ${error}";
+  static String m2(total, galleries, pages) =>
+      "Total concurrent requests: ${total} (${galleries} × ${pages}). This may trigger CDN rate limiting during bulk downloads. Reduce concurrency if downloads fail.";
 
-  static String m3(version) =>
+  static String m3(downloaded, total) => "${downloaded} / ${total} pages";
+
+  static String m4(count) => "${count} pages";
+
+  static String m5(error) => "Failed to update favorite: ${error}";
+
+  static String m6(version) =>
       "need download tag translation data, version: ${version}";
 
   final messages = _notInlinedMessages(_notInlinedMessages);
   static Map<String, Function> _notInlinedMessages(_) => <String, Function>{
     "about": MessageLookupByLibrary.simpleMessage("About"),
+    "added_on": m0,
     "advanced": MessageLookupByLibrary.simpleMessage("Advanced"),
     "all": MessageLookupByLibrary.simpleMessage("All"),
     "always": MessageLookupByLibrary.simpleMessage("Always"),
@@ -43,6 +52,8 @@ class MessageLookup extends MessageLookupByLibrary {
       "Auto read interval",
     ),
     "cancel": MessageLookupByLibrary.simpleMessage("Cancel"),
+    "cdn_warn_high": m1,
+    "cdn_warn_moderate": m2,
     "chinese": MessageLookupByLibrary.simpleMessage("Chinese"),
     "clear_history": MessageLookupByLibrary.simpleMessage("Clear History"),
     "clear_history_tip": MessageLookupByLibrary.simpleMessage(
@@ -58,8 +69,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Comment must be longer than 10 characters",
     ),
     "comments": MessageLookupByLibrary.simpleMessage("Comments"),
+    "concurrent_downloads": MessageLookupByLibrary.simpleMessage(
+      "Concurrent Downloads",
+    ),
     "cover_blur": MessageLookupByLibrary.simpleMessage("Cover Blur"),
     "curl_vertical": MessageLookupByLibrary.simpleMessage("Curl Vertical"),
+    "current_path": MessageLookupByLibrary.simpleMessage("Current path"),
     "custom_layout_width": MessageLookupByLibrary.simpleMessage(
       "Custom Layout Width",
     ),
@@ -76,11 +91,15 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "download_failed": MessageLookupByLibrary.simpleMessage("Download Failed"),
     "download_management": MessageLookupByLibrary.simpleMessage("Downloads"),
+    "download_path": MessageLookupByLibrary.simpleMessage("Download Path"),
     "download_paused": MessageLookupByLibrary.simpleMessage("Paused"),
     "download_pending": MessageLookupByLibrary.simpleMessage("Pending"),
-    "download_progress": m0,
+    "download_progress": m3,
     "download_redownload": MessageLookupByLibrary.simpleMessage("Re-download"),
-    "download_total_pages": m1,
+    "download_settings": MessageLookupByLibrary.simpleMessage(
+      "Download Settings",
+    ),
+    "download_total_pages": m4,
     "downloading": MessageLookupByLibrary.simpleMessage("Downloading"),
     "dynamic_color": MessageLookupByLibrary.simpleMessage("Dynamic Color"),
     "dynamic_color_tip": MessageLookupByLibrary.simpleMessage(
@@ -90,7 +109,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "favorite_added": MessageLookupByLibrary.simpleMessage(
       "Added to favorites",
     ),
-    "favorite_failed": m2,
+    "favorite_failed": m5,
     "favorite_removed": MessageLookupByLibrary.simpleMessage(
       "Removed from favorites",
     ),
@@ -121,6 +140,12 @@ class MessageLookup extends MessageLookupByLibrary {
       "Login need captcha",
     ),
     "logout": MessageLookupByLibrary.simpleMessage("Logout"),
+    "max_concurrent_galleries": MessageLookupByLibrary.simpleMessage(
+      "Simultaneous galleries",
+    ),
+    "max_concurrent_pages": MessageLookupByLibrary.simpleMessage(
+      "Pages per gallery",
+    ),
     "more": MessageLookupByLibrary.simpleMessage("More"),
     "more_like_this": MessageLookupByLibrary.simpleMessage("More like this"),
     "never": MessageLookupByLibrary.simpleMessage("Never"),
@@ -158,6 +183,9 @@ class MessageLookup extends MessageLookupByLibrary {
     "recent": MessageLookupByLibrary.simpleMessage("Recent"),
     "recent_searches": MessageLookupByLibrary.simpleMessage("Recent searches"),
     "register": MessageLookupByLibrary.simpleMessage("Register"),
+    "reset_to_default": MessageLookupByLibrary.simpleMessage(
+      "Reset to default",
+    ),
     "resume": MessageLookupByLibrary.simpleMessage("Resume"),
     "right_to_left": MessageLookupByLibrary.simpleMessage("Right to Left"),
     "search": MessageLookupByLibrary.simpleMessage("Search"),
@@ -170,13 +198,18 @@ class MessageLookup extends MessageLookupByLibrary {
       "Show tags in list, need download tags data",
     ),
     "single_line": MessageLookupByLibrary.simpleMessage("Single Line"),
+    "sort_by": MessageLookupByLibrary.simpleMessage("Sort by"),
+    "sort_date_newest": MessageLookupByLibrary.simpleMessage("Date (Newest)"),
+    "sort_date_oldest": MessageLookupByLibrary.simpleMessage("Date (Oldest)"),
+    "sort_title_az": MessageLookupByLibrary.simpleMessage("Title (A–Z)"),
+    "sort_title_za": MessageLookupByLibrary.simpleMessage("Title (Z–A)"),
     "system": MessageLookupByLibrary.simpleMessage("System"),
     "tag": MessageLookupByLibrary.simpleMessage("Tag"),
     "tag_layout_on_item": MessageLookupByLibrary.simpleMessage(
       "Tag Layout on Item",
     ),
     "tag_translation": MessageLookupByLibrary.simpleMessage("Tag Translation"),
-    "tag_translation_tip": m3,
+    "tag_translation_tip": m6,
     "tag_translation_update_failed": MessageLookupByLibrary.simpleMessage(
       "Translation data update failed",
     ),

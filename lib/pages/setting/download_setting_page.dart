@@ -4,6 +4,7 @@ import 'package:auto_route/auto_route.dart';
 import 'package:eros_n/common/global.dart';
 import 'package:eros_n/common/provider/settings_provider.dart';
 import 'package:eros_n/component/widget/adaptive_app_bar.dart';
+import 'package:eros_n/generated/l10n.dart';
 import 'package:flutter/material.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 
@@ -16,13 +17,14 @@ class DownloadSettingPage extends ConsumerWidget {
     final glass = isLiquidGlass(ref);
     final settings = ref.watch(settingsProvider);
     final notifier = ref.read(settingsProvider.notifier);
+    final l = L10n.of(context);
 
     return Scaffold(
       extendBodyBehindAppBar: glass,
       appBar: adaptiveAppBar(
         context: context,
         ref: ref,
-        title: const Text('下载设置'),
+        title: Text(l.download_settings),
       ),
       body: ListView(
         padding: glass ? glassBodyPadding(context) : null,
@@ -30,14 +32,14 @@ class DownloadSettingPage extends ConsumerWidget {
           Padding(
             padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
             child: Text(
-              '并发下载',
+              l.concurrent_downloads,
               style: Theme.of(context).textTheme.titleSmall?.copyWith(
                     color: Theme.of(context).colorScheme.primary,
                   ),
             ),
           ),
           ListTile(
-            title: const Text('同时下载的画廊数量'),
+            title: Text(l.max_concurrent_galleries),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 8),
               child: SegmentedButton<int>(
@@ -53,7 +55,7 @@ class DownloadSettingPage extends ConsumerWidget {
             ),
           ),
           ListTile(
-            title: const Text('每画廊同时下载的页数'),
+            title: Text(l.max_concurrent_pages),
             subtitle: Padding(
               padding: const EdgeInsets.only(top: 8),
               child: SegmentedButton<int>(
@@ -68,20 +70,24 @@ class DownloadSettingPage extends ConsumerWidget {
               ),
             ),
           ),
+          _ConcurrencyWarning(
+            galleries: settings.maxConcurrentGalleries,
+            pages: settings.maxConcurrentPages,
+          ),
           const Divider(height: 1),
           // Download path section — only on Android / HarmonyOS
           if (!Platform.isIOS) ...[
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 16, 16, 4),
               child: Text(
-                '下载路径',
+                l.download_path,
                 style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       color: Theme.of(context).colorScheme.primary,
                     ),
               ),
             ),
             ListTile(
-              title: const Text('当前路径'),
+              title: Text(l.current_path),
               subtitle: Text(
                 settings.customDownloadPath.isNotEmpty
                     ? settings.customDownloadPath
@@ -100,13 +106,81 @@ class DownloadSettingPage extends ConsumerWidget {
                       onPressed: () {
                         notifier.setCustomDownloadPath('');
                       },
-                      child: const Text('重置为默认'),
+                      child: Text(l.reset_to_default),
                     ),
                 ],
               ),
             ),
           ],
         ],
+      ),
+    );
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Concurrency warning banner
+// ---------------------------------------------------------------------------
+
+class _ConcurrencyWarning extends StatelessWidget {
+  const _ConcurrencyWarning({
+    required this.galleries,
+    required this.pages,
+  });
+
+  final int galleries;
+  final int pages;
+
+  @override
+  Widget build(BuildContext context) {
+    final total = galleries * pages;
+    final scheme = Theme.of(context).colorScheme;
+    final l = L10n.of(context);
+
+    // total <= 4: safe (hidden)  5–8: warning  >= 9: error
+    final Color bgColor;
+    final Color fgColor;
+    final IconData icon;
+    final String message;
+
+    if (total >= 9) {
+      bgColor = scheme.errorContainer;
+      fgColor = scheme.onErrorContainer;
+      icon = Icons.warning_amber_rounded;
+      message = l.cdn_warn_high(total, galleries, pages);
+    } else if (total >= 5) {
+      bgColor = scheme.tertiaryContainer;
+      fgColor = scheme.onTertiaryContainer;
+      icon = Icons.info_outline_rounded;
+      message = l.cdn_warn_moderate(total, galleries, pages);
+    } else {
+      return const SizedBox.shrink();
+    }
+
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+        decoration: BoxDecoration(
+          color: bgColor,
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Icon(icon, size: 18, color: fgColor),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(
+                message,
+                style: Theme.of(context)
+                    .textTheme
+                    .bodySmall
+                    ?.copyWith(color: fgColor),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

@@ -13,7 +13,9 @@ class DownloadTask {
     this.downloadedPages = 0,
     this.status = DownloadStatus.pending,
     List<String>? pageExts,
-  }) : pageExts = pageExts ?? [];
+    int? createdAt,
+  })  : pageExts = pageExts ?? [],
+        createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch;
 
   factory DownloadTask.fromMap(Map<String, dynamic> m) => DownloadTask(
         gid: (m['gid'] as num).toInt(),
@@ -30,6 +32,7 @@ class DownloadTask {
         pageExts: List<String>.from(
           jsonDecode(m['pageExts'] as String? ?? '[]') as List,
         ),
+        createdAt: (m['createdAt'] as num?)?.toInt(),
       );
 
   final int gid;
@@ -38,6 +41,7 @@ class DownloadTask {
   final String mediaId;
   final int totalPages;
   final String savedDir;
+  final int createdAt;
   int downloadedPages;
   DownloadStatus status;
   List<String> pageExts;
@@ -57,6 +61,7 @@ class DownloadTask {
       downloadedPages: downloadedPages ?? this.downloadedPages,
       status: status ?? this.status,
       pageExts: pageExts ?? List.from(this.pageExts),
+      createdAt: createdAt,
     );
   }
 
@@ -70,5 +75,6 @@ class DownloadTask {
         'status': status.name,
         'savedDir': savedDir,
         'pageExts': jsonEncode(pageExts),
+        'createdAt': createdAt,
       };
 }

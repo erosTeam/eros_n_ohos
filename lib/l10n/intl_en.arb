@@ -145,5 +145,39 @@
     "placeholders": {
       "error": {}
     }
+  },
+  "sort_by": "Sort by",
+  "sort_date_newest": "Date (Newest)",
+  "sort_date_oldest": "Date (Oldest)",
+  "sort_title_az": "Title (A–Z)",
+  "sort_title_za": "Title (Z–A)",
+  "added_on": "Added {date}",
+  "@added_on": {
+    "placeholders": {
+      "date": {}
+    }
+  },
+  "download_settings": "Download Settings",
+  "concurrent_downloads": "Concurrent Downloads",
+  "max_concurrent_galleries": "Simultaneous galleries",
+  "max_concurrent_pages": "Pages per gallery",
+  "download_path": "Download Path",
+  "current_path": "Current path",
+  "reset_to_default": "Reset to default",
+  "cdn_warn_moderate": "Total concurrent requests: {total} ({galleries} × {pages}). This may trigger CDN rate limiting during bulk downloads. Reduce concurrency if downloads fail.",
+  "@cdn_warn_moderate": {
+    "placeholders": {
+      "total": {},
+      "galleries": {},
+      "pages": {}
+    }
+  },
+  "cdn_warn_high": "Total concurrent requests: {total} ({galleries} × {pages}). Very likely to trigger a temporary CDN ban, causing download failures and broken thumbnails. Reduce concurrency.",
+  "@cdn_warn_high": {
+    "placeholders": {
+      "total": {},
+      "galleries": {},
+      "pages": {}
+    }
   }
 }

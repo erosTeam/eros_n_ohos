@@ -9,7 +9,7 @@ import 'package:eros_n/utils/logger.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqflite/sqflite.dart';
 
-const int _kDbVersion = 3;
+const int _kDbVersion = 4;
 
 class SqliteDbStore implements DbStore {
   Database? _db;
@@ -120,7 +120,8 @@ class SqliteDbStore implements DbStore {
         downloadedPages INTEGER NOT NULL DEFAULT 0,
         status          TEXT NOT NULL DEFAULT 'pending',
         savedDir        TEXT NOT NULL DEFAULT '',
-        pageExts        TEXT NOT NULL DEFAULT '[]'
+        pageExts        TEXT NOT NULL DEFAULT '[]',
+        createdAt       INTEGER NOT NULL DEFAULT 0
       )
     ''');
   }
@@ -145,6 +146,11 @@ class SqliteDbStore implements DbStore {
           pageExts        TEXT NOT NULL DEFAULT '[]'
         )
       ''');
+    }
+    if (oldVersion < 4) {
+      await db.execute(
+        'ALTER TABLE download_task ADD COLUMN createdAt INTEGER NOT NULL DEFAULT 0',
+      );
     }
   }
 

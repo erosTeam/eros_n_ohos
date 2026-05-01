@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:dio/dio.dart';
 import 'package:eros_n/common/const/const.dart';
 import 'package:eros_n/common/global.dart';
 import 'package:eros_n/common/provider/settings_provider.dart';
@@ -67,9 +68,16 @@ class DownloadNotifier extends _$DownloadNotifier {
         map[t.gid] = t.copyWith(status: DownloadStatus.paused);
       } else {
         map[t.gid] = t;
+        // Re-queue tasks that were pending before the app was killed.
+        if (t.status == DownloadStatus.pending) {
+          _pendingQueue.add(t.gid);
+        }
       }
     }
     state = map;
+    if (_pendingQueue.isNotEmpty) {
+      _processQueue();
+    }
   }
 
   Future<void> addDownload(Gallery gallery) async {
@@ -245,6 +253,18 @@ class DownloadNotifier extends _$DownloadNotifier {
         }
       }
 
+      // Sync the real already-downloaded count to state so the progress bar
+      // starts at the correct position (important on resume after restart).
+      final alreadyDone = total - pending.length;
+      if (alreadyDone != task.downloadedPages) {
+        await objectBoxHelper.updateDownloadProgress(
+            gid, alreadyDone, DownloadStatus.downloading);
+        state = {
+          ...state,
+          gid: (state[gid] ?? task).copyWith(downloadedPages: alreadyDone),
+        };
+      }
+
       // Sliding-window pool: keeps maxConcurrentPages slots filled at all times.
       await _runPagePool(gid, pending);
 
@@ -312,9 +332,9 @@ class DownloadNotifier extends _$DownloadNotifier {
       while (active < maxSlots && queueIdx < pending.length) {
         final idx = pending[queueIdx++];
         active++;
-        _downloadPage(gid, idx).whenComplete(() {
+        _downloadPage(gid, idx).then((ok) {
           active--;
-          _updateDownloadProgress(gid);
+          if (ok) _incrementProgress(gid);
           fill();
         });
       }
@@ -328,13 +348,15 @@ class DownloadNotifier extends _$DownloadNotifier {
     return completer.future;
   }
 
-  void _updateDownloadProgress(int gid) {
+  /// Increments the downloaded page counter by 1 and notifies UI.
+  /// O(1) — avoids scanning the filesystem on every page completion.
+  void _incrementProgress(int gid) {
     final task = state[gid];
     if (task == null) return;
-    final downloaded = _countDownloaded(task);
+    final newCount = task.downloadedPages + 1;
     objectBoxHelper.updateDownloadProgress(
-        gid, downloaded, DownloadStatus.downloading);
-    state = {...state, gid: task.copyWith(downloadedPages: downloaded)};
+        gid, newCount, DownloadStatus.downloading);
+    state = {...state, gid: task.copyWith(downloadedPages: newCount)};
   }
 
   int _countDownloaded(DownloadTask task) {
@@ -348,19 +370,52 @@ class DownloadNotifier extends _$DownloadNotifier {
     return count;
   }
 
-  Future<void> _downloadPage(int gid, int index) async {
+  /// Downloads a single page with exponential-backoff retry.
+  /// Returns true on success, false if all retries are exhausted.
+  /// Never throws — all errors are caught internally.
+  Future<bool> _downloadPage(int gid, int index) async {
     final task = state[gid];
-    if (task == null || index >= task.pageExts.length) return;
+    if (task == null || index >= task.pageExts.length) return false;
 
     final ext = task.pageExts[index];
     final localPath = '${task.savedDir}/${index + 1}.$ext';
-    if (File(localPath).existsSync()) return;
+    if (File(localPath).existsSync()) return true;
 
     final url = getGalleryImageUrl(task.mediaId, index, ext);
-    try {
-      await nhDownload(url: url, savePath: localPath);
-    } catch (e) {
-      logger.e('_downloadPage gid=$gid index=$index error: $e');
+
+      const maxRetries = 2;
+      for (var attempt = 0; attempt <= maxRetries; attempt++) {
+      // Abort if task was paused or deleted.
+      final cur = state[gid];
+      if (cur == null || cur.status != DownloadStatus.downloading) return false;
+
+      try {
+        await nhDownload(url: url, savePath: localPath);
+        return true;
+      } catch (e) {
+        if (attempt == maxRetries) {
+          logger.e('_downloadPage gid=$gid idx=$index failed after $maxRetries retries: $e');
+          return false;
+        }
+        // 429 via HTTP response header.
+        final is429 = e is DioException && e.response?.statusCode == 429;
+        // CDN bans often manifest as connection drops (unknown/null response)
+        // or timeouts rather than a proper 429 reply — treat them the same.
+        final isConnectionDrop = e is DioException &&
+            (e.type == DioExceptionType.unknown ||
+                e.type == DioExceptionType.connectionTimeout ||
+                e.type == DioExceptionType.receiveTimeout);
+        final isRateLimited = is429 || isConnectionDrop;
+        // Rate-limited / connection drop: 10 s → 30 s.  Other errors: 3 s → 9 s.
+        final delay = isRateLimited
+            ? Duration(seconds: 10 * (1 << attempt))
+            : Duration(seconds: 3 * (1 << attempt));
+        logger.w('_downloadPage gid=$gid idx=$index attempt=$attempt '
+            '${is429 ? "[429]" : isConnectionDrop ? "[cdn-drop]" : "[error]"} '
+            'retrying in ${delay.inSeconds}s: ${e.runtimeType}');
+        await Future.delayed(delay);
+      }
     }
+    return false;
   }
 }
