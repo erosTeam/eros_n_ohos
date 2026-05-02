@@ -9,6 +9,7 @@ import 'package:eros_n/component/models/index.dart';
 import 'package:eros_n/component/widget/eros_cached_network_image.dart';
 import 'package:eros_n/component/widget/preload_photo_view_gallery.dart';
 import 'package:eros_n/pages/gallery/gallery_provider.dart';
+import 'package:eros_n/pages/nav/history/history_provider.dart';
 import 'package:eros_n/pages/read/read_provider.dart';
 import 'package:eros_n/pages/read/read_widget.dart';
 import 'package:eros_n/store/db/entity/download_task.dart';
@@ -114,6 +115,9 @@ class ReadPage extends HookConsumerWidget {
         if (task != null &&
             task.status == DownloadStatus.completed &&
             ref.read(galleryProvider(gid)).images.pages.isEmpty) {
+          // Ensure a proper history entry exists before reading, so that
+          // onPageChanged → updateReadIndex can persist progress correctly.
+          ref.read(historyProvider.notifier).addHistoryFromTask(task);
           ref.read(galleryProvider(gid).notifier).initForOfflineRead(task);
           // Jump to the restored reading position after initialization,
           // since ReadPageView's own postFrameCallback may have already

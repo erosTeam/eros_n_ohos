@@ -1,6 +1,7 @@
 import 'package:eros_n/common/global.dart';
 import 'package:eros_n/component/models/index.dart';
 import 'package:eros_n/pages/nav/front/list_view_state.dart';
+import 'package:eros_n/store/db/entity/download_task.dart';
 import 'package:eros_n/store/db/entity/gallery_history.dart';
 import 'package:eros_n/utils/logger.dart';
 import 'package:riverpod_annotation/riverpod_annotation.dart';
@@ -38,6 +39,26 @@ class HistoryNotifier extends _$HistoryNotifier {
       ..mediaId = gallery.mediaId
       ..lastReadTime = DateTime.now().millisecondsSinceEpoch
       ..lastReadIndex = existing?.lastReadIndex;
+
+    _historyGalleryNotifier.insertGallery(galleryHistory);
+    await objectBoxHelper.addHistory(galleryHistory);
+  }
+
+  /// Create a history entry from a completed download task when no entry
+  /// exists yet. Called before offline reading starts so that onPageChanged
+  /// → updateReadIndex can persist progress immediately.
+  Future<void> addHistoryFromTask(DownloadTask task) async {
+    final existing = ref
+        .read(historyGallerysProvider)
+        .where((h) => h.gid == task.gid)
+        .firstOrNull;
+    if (existing != null) return;
+
+    final galleryHistory = GalleryHistory(gid: task.gid)
+      ..title = task.title
+      ..mediaId = task.mediaId
+      ..url = 'https://nhentai.net/g/${task.gid}/'
+      ..lastReadTime = DateTime.now().millisecondsSinceEpoch;
 
     _historyGalleryNotifier.insertGallery(galleryHistory);
     await objectBoxHelper.addHistory(galleryHistory);
@@ -100,17 +121,10 @@ class HistoryGallerys extends _$HistoryGallerys {
   }
 
   void updateReadIndex(int gid, int index) {
-    final exists = state.any((h) => h.gid == gid);
-    if (!exists) {
-      // No history entry yet (e.g. opened directly from downloads).
-      // Insert a minimal stub so progress is tracked from this point on.
-      state = [GalleryHistory(gid: gid)..lastReadIndex = index, ...state];
-    } else {
-      state = [
-        for (final h in state)
-          if (h.gid == gid) (h..lastReadIndex = index) else h,
-      ];
-    }
+    state = [
+      for (final h in state)
+        if (h.gid == gid) (h..lastReadIndex = index) else h,
+    ];
   }
 }
 
