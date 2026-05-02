@@ -1397,34 +1397,19 @@ class ToolBarView extends HookConsumerWidget {
             style: compactStyle,
             onPressed: isUserLogin
                 ? () async {
-                    late String savePath;
-
-                    await nhDownload(
-                      url: '/g/${gallery.gid}/download',
-                      savePath: (Headers headers) {
-                        logger.d(headers);
-                        final contentDisposition = headers.value(
-                          'content-disposition',
-                        );
-                        final filename =
-                            contentDisposition
-                                ?.split(RegExp(r"filename(=|\*=UTF-8'')"))
-                                .last ??
-                            '';
-                        final fileNameDecode = Uri.decodeFull(
-                          filename,
-                        ).replaceAll('/', '_');
-                        logger.d(fileNameDecode);
-                        savePath = path.joinAll([
+                    try {
+                      final savePath = await downloadTorrent(
+                        gid: gallery.gid,
+                        saveDirPath: path.join(
                           Global.tempPath,
                           'torrent',
                           '${gallery.gid}',
-                          fileNameDecode,
-                        ]);
-                        return savePath;
-                      },
-                    );
-                    Share.shareXFiles([XFile(savePath)]);
+                        ),
+                      );
+                      Share.shareXFiles([XFile(savePath)]);
+                    } catch (e) {
+                      logger.e('torrent download failed', error: e);
+                    }
                   }
                 : null,
           ),

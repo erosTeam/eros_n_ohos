@@ -272,7 +272,7 @@ def _fix_so_compression(hap_path: Path):
     finally:
         shutil.rmtree(tmp)
 
-def sign_and_install(mode: str, devices: list[str]):
+def sign_hap(mode: str):
     signed_hap = _signed_hap(mode)
     xiaobai_p12 = SIGN_DIR / "xiaobai.p12"
     ks, alias, pwd = str(xiaobai_p12), "xiaobai", "xiaobai123"
@@ -301,11 +301,17 @@ def sign_and_install(mode: str, devices: list[str]):
     if "sign-app success" not in output:
         raise RuntimeError("签名失败")
 
+def install_hap(mode: str, devices: list[str]):
+    signed_hap = _signed_hap(mode)
     print("安装 HAP...")
     for dev in devices:
         print(f"  安装到 {dev}...")
         result = subprocess.run([str(HDC), "-t", dev, "install", str(signed_hap)], capture_output=True, text=True)
         print(f"  {(result.stdout + result.stderr).strip()}")
+
+def sign_and_install(mode: str, devices: list[str]):
+    sign_hap(mode)
+    install_hap(mode, devices)
 
 # ── 设备缓存 ──────────────────────────────────────────────────────────────────
 def load_cached_device() -> str | None:
@@ -407,6 +413,7 @@ def main():
         sys.exit(0)
 
     no_build      = "--no-build"       in args
+    no_install    = "--no-install"     in args
     force_profile = "--force-profile"  in args
 
     # 解析 -d 参数：可以是 "all" 或具体设备地址
@@ -423,16 +430,15 @@ def main():
     else:
         mode = "debug"
 
-    # 构建前先确定安装目标，避免构建完成后才询问设备
-    print("==> 检查已连接设备...")
-    devices = resolve_install_targets(target_device)
-
-    # 唤醒目标设备屏幕并延长息屏时间，忽略错误
-    for dev in devices:
-        subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "wakeup"],
-                       capture_output=True)
-        subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "timeout", "-o", "3600000"],
-                       capture_output=True)
+    devices = []
+    if not no_install:
+        print("==> 检查已连接设备...")
+        devices = resolve_install_targets(target_device)
+        for dev in devices:
+            subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "wakeup"],
+                           capture_output=True)
+            subprocess.run([str(HDC), "-t", dev, "shell", "power-shell", "timeout", "-o", "3600000"],
+                           capture_output=True)
 
     if not no_build:
         print(f"==> 构建 HAP（{mode}, no codesign）...")
@@ -448,10 +454,11 @@ def main():
         print(f"ERROR: 未找到 {UNSIGNED_HAP}")
         sys.exit(1)
 
-    # 如果 profile 已存在且不强制刷新，直接签名安装
     if CERT_FILE.exists() and PROFILE_FILE.exists() and not force_profile:
         print("证书和 Profile 已存在，跳过 API 调用")
-        sign_and_install(mode, devices)
+        sign_hap(mode)
+        if not no_install:
+            install_hap(mode, devices)
         return
 
     auth = load_or_login()
@@ -471,10 +478,15 @@ def main():
     if force_profile or not PROFILE_FILE.exists():
         ensure_profile(auth, cert_id, device_ids)
 
-    print("\n==> 签名 & 安装...")
-    sign_and_install(mode, devices)
+    print("\n==> 签名...")
+    sign_hap(mode)
+    if not no_install:
+        print("\n==> 安装...")
+        install_hap(mode, devices)
 
-    if mode != "release":
+    if no_install:
+        print(f"\n==> 完成！已签名: {_signed_hap(mode)}")
+    elif mode != "release":
         print("\n==> 完成！在设备上打开 App，然后运行:")
         print(f"    cd {PROJ} && fvm flutter attach")
     else:

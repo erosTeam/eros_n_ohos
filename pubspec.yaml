@@ -19,7 +19,6 @@ dependencies:
   collection: ^1.19.1
   logger: ^2.7.0
   path_provider: ^2.1.5
-  path_provider_harmonyos: ^0.0.1
   intl: ^0.20.0
   dynamic_color: ^1.8.1
   flutter_inappwebview: ^6.1.5
@@ -139,9 +138,16 @@ dependency_overrides:
       path: "flutter_inappwebview"
   # Pinned to last versions supporting Dart <3.10 (flutter-ohos Dart SDK is 3.9.2).
   # Once flutter-ohos upgrades its Dart SDK these overrides can be removed.
+  path_provider:
+    git:
+      url: "https://atomgit.com/openharmony-tpc/flutter_packages.git"
+      path: "packages/path_provider/path_provider"
   wakelock_plus: ^1.4.0
   package_info_plus: ^8.0.0
-  share_plus: ^10.0.0
+  share_plus:
+    git:
+      url: "https://atomgit.com/openharmony-sig/flutter_plus_plugins.git"
+      path: "packages/share_plus/share_plus"
   url_launcher:
     git:
       url: "https://atomgit.com/openharmony-tpc/flutter_packages.git"

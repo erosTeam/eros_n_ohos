@@ -3,6 +3,7 @@
 #
 # 用法:
 #   bash dev.sh                   # debug 构建 + 签名 + 安装到缓存/选择的设备
+#   bash dev.sh --build-only      # 仅构建 + 签名，不安装到设备
 #   bash dev.sh -d all            # 安装到所有已连接设备（并刷新缓存时效）
 #   bash dev.sh -d <device>       # 安装到指定设备（不影响缓存）
 #   bash dev.sh --release         # release 构建 + 签名 + 安装
@@ -32,6 +33,7 @@ dev.sh - 鸿蒙开发一键脚本
 
 用法:
   bash dev.sh                   debug 构建 + 签名 + 安装到缓存/选择的设备
+  bash dev.sh --build-only      仅构建 + 签名，不安装到设备
   bash dev.sh -d all            安装到所有已连接设备（并刷新缓存时效）
   bash dev.sh -d <device>       安装到指定设备（不影响缓存）
   bash dev.sh --release         release 构建 + 签名 + 安装
@@ -74,8 +76,11 @@ EOF
     rm -f "$PROJ/ohos/sign/xiaobai-debug.cer" "$PROJ/ohos/sign/xiaobai-debug.p7b"
     python3 "$PROJ/scripts/huawei_sign.py" --no-build --force-profile
     ;;
+  --build-only)
+    shift
+    python3 "$PROJ/scripts/huawei_sign.py" --no-install "$@"
+    ;;
   *)
-    # 唤醒屏幕并延长息屏时间；由 Python 脚本在确定目标设备后执行
     python3 "$PROJ/scripts/huawei_sign.py" "$@"
     ;;
 esac
