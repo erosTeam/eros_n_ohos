@@ -142,7 +142,11 @@ dependency_overrides:
   wakelock_plus: ^1.4.0
   package_info_plus: ^8.0.0
   share_plus: ^10.0.0
-  url_launcher: ^6.2.0
+  url_launcher:
+    git:
+      url: "https://atomgit.com/openharmony-tpc/flutter_packages.git"
+      path: "packages/url_launcher/url_launcher"
+      ref: br_url_launcher_v6.3.1_ohos
   flutter_keyboard_visibility: ^5.4.0
   flutter_typeahead: ^5.2.0
   dio_cache_interceptor: ^3.4.0
