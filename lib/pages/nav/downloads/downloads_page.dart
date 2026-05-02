@@ -401,6 +401,7 @@ class _TaskCard extends ConsumerWidget {
     void openReader() {
       logger.d('openReader gid=${task.gid}');
       pushGalleryPage(task.gid);
+      ref.read(galleryProvider(task.gid).notifier).initForOfflineRead(task);
       erosRouter.push(ReadRoute(colorScheme: Theme.of(context).colorScheme));
     }
 

@@ -8,6 +8,7 @@ import 'package:eros_n/network/request.dart';
 import 'package:eros_n/pages/enum.dart';
 import 'package:eros_n/pages/gallery/gallery_page_state.dart';
 import 'package:eros_n/pages/nav/history/history_provider.dart';
+import 'package:eros_n/store/db/entity/download_task.dart';
 import 'package:eros_n/utils/get_utils/extensions/duration_extensions.dart';
 import 'package:eros_n/utils/get_utils/extensions/num_extensions.dart';
 import 'package:eros_n/utils/logger.dart';
@@ -66,6 +67,29 @@ class GalleryNotifier extends _$GalleryNotifier {
 
   void setInitialPage(int page) {
     state = state.copyWith(currentPageIndex: page);
+  }
+
+  /// Initialize minimal state from a completed download task so that the
+  /// page indicator and slider are correct even before network data arrives.
+  void initForOfflineRead(DownloadTask task) {
+    final savedIndex = ref
+        .read(historyGallerysProvider)
+        .firstWhereOrNull((h) => h.gid == task.gid)
+        ?.lastReadIndex;
+
+    final placeholderPages = List.generate(
+      task.totalPages,
+      (_) => const GalleryImage(),
+    );
+
+    state = state.copyWith(
+      gid: task.gid,
+      mediaId: task.mediaId,
+      currentPageIndex: savedIndex ?? 0,
+      images: GalleryImages(pages: placeholderPages),
+    );
+
+    loadData();
   }
 
   /// Fetch detail + comments + favorite status.
