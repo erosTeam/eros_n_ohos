@@ -108,12 +108,15 @@ class ReadPage extends HookConsumerWidget {
       // If this gallery is a completed download and gallery state is empty
       // (opened directly from downloads page), initialize from the download
       // task so that the indicator, slider and offline images work correctly.
-      final task = ref.read(downloadProvider)[gid];
-      if (task != null &&
-          task.status == DownloadStatus.completed &&
-          ref.read(galleryProvider(gid)).images.pages.isEmpty) {
-        ref.read(galleryProvider(gid).notifier).initForOfflineRead(task);
-      }
+      // Deferred to post-build to avoid "modify provider during build" assertion.
+      Future(() {
+        final task = ref.read(downloadProvider)[gid];
+        if (task != null &&
+            task.status == DownloadStatus.completed &&
+            ref.read(galleryProvider(gid)).images.pages.isEmpty) {
+          ref.read(galleryProvider(gid).notifier).initForOfflineRead(task);
+        }
+      });
 
       return () {
         logger.t('ReadPage dispose');
