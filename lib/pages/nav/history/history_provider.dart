@@ -57,6 +57,7 @@ class HistoryNotifier extends _$HistoryNotifier {
     final galleryHistory = GalleryHistory(gid: task.gid)
       ..title = task.title
       ..mediaId = task.mediaId
+      ..thumbUrl = task.thumbUrl.isNotEmpty ? task.thumbUrl : null
       ..url = 'https://nhentai.net/g/${task.gid}/'
       ..lastReadTime = DateTime.now().millisecondsSinceEpoch;
 
