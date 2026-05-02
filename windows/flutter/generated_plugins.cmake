@@ -6,7 +6,6 @@ list(APPEND FLUTTER_PLUGIN_LIST
   dynamic_color
   screen_retriever_windows
   share_plus
-  system_network_proxy_windows
   url_launcher_windows
   webview_windows
   window_manager

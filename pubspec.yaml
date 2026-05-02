@@ -98,6 +98,8 @@ dev_dependencies:
   flutter_test:
     sdk: flutter
   flutter_lints: ^6.0.0
+  # dart run intl_utils:generate
+  intl_utils: ^2.8.14
   nhentai: ^1.0.0-dev.9
 
 
@@ -145,3 +147,5 @@ dependency_overrides:
   flutter_typeahead: ^5.2.0
   dio_cache_interceptor: ^3.4.0
   meta: ^1.17.0
+  analyzer: ^9.0.0
+  dart_style: 3.1.3
