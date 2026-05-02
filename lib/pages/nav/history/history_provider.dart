@@ -100,10 +100,17 @@ class HistoryGallerys extends _$HistoryGallerys {
   }
 
   void updateReadIndex(int gid, int index) {
-    state = [
-      for (final h in state)
-        if (h.gid == gid) (h..lastReadIndex = index) else h,
-    ];
+    final exists = state.any((h) => h.gid == gid);
+    if (!exists) {
+      // No history entry yet (e.g. opened directly from downloads).
+      // Insert a minimal stub so progress is tracked from this point on.
+      state = [GalleryHistory(gid: gid)..lastReadIndex = index, ...state];
+    } else {
+      state = [
+        for (final h in state)
+          if (h.gid == gid) (h..lastReadIndex = index) else h,
+      ];
+    }
   }
 }
 
