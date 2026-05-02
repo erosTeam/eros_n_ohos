@@ -315,6 +315,36 @@ class SqliteDbStore implements DbStore {
     return rows.map(_mapToTagTranslate).toList();
   }
 
+  @override
+  Future<Map<String, TagTranslate>> findTagTranslatesByNames(
+    List<String> names, {
+    String? namespace,
+  }) async {
+    if (names.isEmpty) return {};
+    final cleaned = names
+        .map((n) => n.contains('|') ? n.split('|').first.trim() : n)
+        .where((n) => n.isNotEmpty)
+        .toSet()
+        .toList();
+    if (cleaned.isEmpty) return {};
+    final placeholders = List.filled(cleaned.length, '?').join(',');
+    var sql =
+        "SELECT * FROM tag_translate WHERE name IN ($placeholders) AND namespace != 'rows'";
+    final args = <Object?>[...cleaned.cast<Object?>()];
+    if (namespace != null && namespace.isNotEmpty) {
+      sql += ' AND namespace = ?';
+      args.add(namespace);
+    }
+    sql += ' ORDER BY id DESC';
+    final rows = await _database.rawQuery(sql, args);
+    final result = <String, TagTranslate>{};
+    for (final row in rows) {
+      final tt = _mapToTagTranslate(row);
+      result.putIfAbsent(tt.name, () => tt);
+    }
+    return result;
+  }
+
   // ---------------------------------------------------------------------------
   // NhTag
   // ---------------------------------------------------------------------------
@@ -353,6 +383,17 @@ class SqliteDbStore implements DbStore {
       limit: 1,
     );
     return rows.isEmpty ? null : _mapToNhTag(rows.first);
+  }
+
+  @override
+  Future<Map<int, NhTag>> findNhTagsByIds(List<int> ids) async {
+    if (ids.isEmpty) return {};
+    final placeholders = List.filled(ids.length, '?').join(',');
+    final rows = await _database.rawQuery(
+      'SELECT * FROM nh_tag WHERE id IN ($placeholders)',
+      ids.cast<Object?>(),
+    );
+    return {for (final r in rows) (r['id'] as num).toInt(): _mapToNhTag(r)};
   }
 
   @override

@@ -42,9 +42,9 @@ class AboutPage extends ConsumerWidget {
             ),
             ListTile(
               title: const Text('Github'),
-              subtitle: const Text('https://github.com/erosTeam/eros_n'),
+              subtitle: const Text('https://github.com/erosTeam/eros_n_ohos'),
               onTap: () => launchUrlString(
-                'https://github.com/erosTeam/eros_n',
+                'https://github.com/erosTeam/eros_n_ohos',
                 mode: LaunchMode.externalApplication,
               ),
             ),

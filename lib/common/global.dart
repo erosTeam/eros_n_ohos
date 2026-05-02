@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:cookie_jar/cookie_jar.dart';
 import 'package:eros_n/common/const/const.dart';
+import 'package:eros_n/network/api.dart';
 import 'package:eros_n/network/app_dio/app_dio.dart';
 import 'package:eros_n/routes/routes.dart';
 import 'package:eros_n/store/db/db_store.dart';
@@ -146,5 +147,13 @@ class Global {
     userAgent = hiveHelper.getUserAgent();
     userAgent ??= NHConst.userAgent;
     globalDioConfig = nhDioConfig.copyWith(userAgent: userAgent);
+
+    // Initialise the shared Hive cache store and await its clean() so the
+    // box is fully ready before the first UI request fires.
+    try {
+      await Api.initCacheStore(appSupportPath);
+    } catch (e) {
+      debugPrint('[Global] Api.initCacheStore failed: $e');
+    }
   }
 }
