@@ -105,11 +105,15 @@ class ReadPage extends HookConsumerWidget {
       }
       readNotifier.addVolumeKeydownListen();
 
-      // ref.listen<Gallery>(galleryProvider(gid), (previous, next) {
-      //   if (next.currentPageIndex != previous?.currentPageIndex) {
-      //     logger.d('ReadPage currentPageIndex change ${next.currentPageIndex}');
-      //   }
-      // });
+      // If this gallery is a completed download and gallery state is empty
+      // (opened directly from downloads page), initialize from the download
+      // task so that the indicator, slider and offline images work correctly.
+      final task = ref.read(downloadProvider)[gid];
+      if (task != null &&
+          task.status == DownloadStatus.completed &&
+          ref.read(galleryProvider(gid)).images.pages.isEmpty) {
+        ref.read(galleryProvider(gid).notifier).initForOfflineRead(task);
+      }
 
       return () {
         logger.t('ReadPage dispose');
