@@ -104,6 +104,7 @@ class GalleryNotifier extends _$GalleryNotifier {
     logger.d('url ${state.url}');
     try {
       final gallery = await getGalleryDetail(url: state.url, refresh: refresh);
+      if (!ref.mounted) return;
       state = gallery.copyWith(
         mediaId: gallery.mediaId ?? state.mediaId,
         currentPageIndex: state.currentPageIndex,
@@ -112,26 +113,33 @@ class GalleryNotifier extends _$GalleryNotifier {
     } on HttpException {
       rethrow;
     } finally {
-      ref
-          .read(pageStateProvider(state.gid).notifier)
-          .update((s) => s.copyWith(pageStatus: PageStatus.none));
+      if (ref.mounted) {
+        ref
+            .read(pageStateProvider(state.gid).notifier)
+            .update((s) => s.copyWith(pageStatus: PageStatus.none));
+      }
     }
 
+    if (!ref.mounted) return;
     logger.d('url ${state.url}');
     try {
       final comments = await getGalleryComments(
         gid: state.gid,
         refresh: refresh,
       );
+      if (!ref.mounted) return;
       state = state.copyWith(comments: comments);
     } on HttpException {
       rethrow;
     } finally {
-      ref
-          .read(pageStateProvider(state.gid).notifier)
-          .update((s) => s.copyWith(pageStatus: PageStatus.none));
+      if (ref.mounted) {
+        ref
+            .read(pageStateProvider(state.gid).notifier)
+            .update((s) => s.copyWith(pageStatus: PageStatus.none));
+      }
     }
 
+    if (!ref.mounted) return;
     // Resolve real favorite state via API. The SvelteKit detail HTML carries
     // no session info, so the parser leaves `isFavorited` as null and we fill
     // it in here. Best-effort: a failure just leaves the heart hollow.
@@ -141,6 +149,7 @@ class GalleryNotifier extends _$GalleryNotifier {
   Future<void> _refreshFavoriteStatus() async {
     try {
       final fav = await getGalleryFavoriteStatus(gid: state.gid);
+      if (!ref.mounted) return;
       if (fav != null && fav != state.isFavorited) {
         state = state.copyWith(isFavorited: fav);
       }
