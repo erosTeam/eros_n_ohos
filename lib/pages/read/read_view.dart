@@ -115,6 +115,13 @@ class ReadPage extends HookConsumerWidget {
             task.status == DownloadStatus.completed &&
             ref.read(galleryProvider(gid)).images.pages.isEmpty) {
           ref.read(galleryProvider(gid).notifier).initForOfflineRead(task);
+          // Jump to the restored reading position after initialization,
+          // since ReadPageView's own postFrameCallback may have already
+          // fired with the old (0) index.
+          final savedIndex = ref.read(galleryProvider(gid)).currentPageIndex;
+          if (savedIndex > 0) {
+            readNotifier.jumpToPage(savedIndex);
+          }
         }
       });
 

@@ -215,6 +215,13 @@ class SqliteDbStore implements DbStore {
 
   @override
   Future<void> updateHistoryReadIndex(int gid, int index) async {
+    // Ensure a row exists before updating, so progress is saved even when
+    // the gallery was opened from downloads without visiting the detail page.
+    await _database.insert(
+      'gallery_history',
+      {'gid': gid, 'lastReadIndex': index},
+      conflictAlgorithm: ConflictAlgorithm.ignore,
+    );
     await _database.update(
       'gallery_history',
       {'lastReadIndex': index},
