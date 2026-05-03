@@ -266,7 +266,9 @@ Future<Gallery> _enrichGalleryDetail(Gallery raw) async {
   final enrichedTags = await _enrichDetailTags(raw.tags);
 
   // Enrich related galleries' simpleTags via the shared batch helper.
-  final enrichedRelated = await listparse.enrichGalleryList(raw.moreLikeGallerys);
+  final enrichedRelated = await listparse.enrichGalleryList(
+    raw.moreLikeGallerys,
+  );
 
   return raw.copyWith(tags: enrichedTags, moreLikeGallerys: enrichedRelated);
 }
@@ -311,7 +313,13 @@ Future<List<Tag>> _enrichDetailTags(List<Tag> tags) async {
 Future<Gallery> parseGalleryDetailFromApi(Map<String, dynamic> json) async {
   const cdnThumb = 'https://t.nhentai.net';
   // Map file extension to nhentai type shorthand.
-  const extToType = {'jpg': 'j', 'jpeg': 'j', 'png': 'p', 'gif': 'g', 'webp': 'w'};
+  const extToType = {
+    'jpg': 'j',
+    'jpeg': 'j',
+    'png': 'p',
+    'gif': 'g',
+    'webp': 'w',
+  };
 
   String typeFromPath(String path) {
     final ext = path.split('.').last.toLowerCase();
@@ -330,13 +338,15 @@ Future<Gallery> parseGalleryDetailFromApi(Map<String, dynamic> json) async {
     final path = page['path'] as String? ?? '';
     final thumbPath = page['thumbnail'] as String? ?? '';
     final number = (page['number'] as num?)?.toInt() ?? (pages.length + 1);
-    pages.add(GalleryImage(
-      type: typeFromPath(path),
-      imgWidth: (page['width'] as num?)?.toInt(),
-      imgHeight: (page['height'] as num?)?.toInt(),
-      imageUrl: thumbPath.isNotEmpty ? '$cdnThumb/$thumbPath' : null,
-      href: '/g/$gid/$number/',
-    ));
+    pages.add(
+      GalleryImage(
+        type: typeFromPath(path),
+        imgWidth: (page['width'] as num?)?.toInt(),
+        imgHeight: (page['height'] as num?)?.toInt(),
+        imageUrl: thumbPath.isNotEmpty ? '$cdnThumb/$thumbPath' : null,
+        href: '/g/$gid/$number/',
+      ),
+    );
   }
 
   // cover (top-level in v2)
@@ -362,20 +372,21 @@ Future<Gallery> parseGalleryDetailFromApi(Map<String, dynamic> json) async {
   // tags — full Tag objects (not just ids)
   final rawTags = (json['tags'] as List? ?? [])
       .whereType<Map>()
-      .map((t) => Tag(
-            id: (t['id'] as num?)?.toInt(),
-            type: t['type'] as String?,
-            name: t['name'] as String?,
-            url: t['url'] as String?,
-            count: (t['count'] as num?)?.toInt(),
-          ))
+      .map(
+        (t) => Tag(
+          id: (t['id'] as num?)?.toInt(),
+          type: t['type'] as String?,
+          name: t['name'] as String?,
+          url: t['url'] as String?,
+          count: (t['count'] as num?)?.toInt(),
+        ),
+      )
       .toList();
 
   final uploadDate = (json['upload_date'] as num?)?.toInt();
-  final uploadedDateTime =
-      uploadDate != null
-          ? DateTime.fromMillisecondsSinceEpoch(uploadDate * 1000).toIso8601String()
-          : null;
+  final uploadedDateTime = uploadDate != null
+      ? DateTime.fromMillisecondsSinceEpoch(uploadDate * 1000).toIso8601String()
+      : null;
 
   return Gallery(
     gid: gid,
@@ -399,4 +410,3 @@ Future<Gallery> parseGalleryDetailFromApi(Map<String, dynamic> json) async {
     isFavorited: null,
   );
 }
-

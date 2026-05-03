@@ -147,7 +147,6 @@ class ReadNotifier extends _$ReadNotifier {
   }
 
   Future<void> handOnTapCenter(BuildContext context) async {
-
     if (state.showAppBar) {
       hideAppBar();
     } else {

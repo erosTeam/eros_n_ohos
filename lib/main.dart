@@ -103,8 +103,10 @@ class _MyAppState extends ConsumerState<MyApp> with WidgetsBindingObserver {
     final dpr = view.devicePixelRatio;
     final dpW = physicalSize.width / dpr;
     final dpH = physicalSize.height / dpr;
-    logger.d('Screen metrics: ${physicalSize.width.toInt()}x${physicalSize.height.toInt()} px, '
-        'dpr=$dpr, ${dpW.toStringAsFixed(1)}x${dpH.toStringAsFixed(1)} dp');
+    logger.d(
+      'Screen metrics: ${physicalSize.width.toInt()}x${physicalSize.height.toInt()} px, '
+      'dpr=$dpr, ${dpW.toStringAsFixed(1)}x${dpH.toStringAsFixed(1)} dp',
+    );
   }
 
   @override

@@ -29,7 +29,9 @@ class SqliteDbStore implements DbStore {
   Future<void> init({String? path}) async {
     String dbPath;
     try {
-      dbPath = path != null ? p.join(path, 'eros_n.db') : await _resolveDbPath();
+      dbPath = path != null
+          ? p.join(path, 'eros_n.db')
+          : await _resolveDbPath();
     } catch (e) {
       logger.e('[SqliteDbStore] _resolveDbPath failed: $e');
       dbPath = 'eros_n.db';
@@ -217,11 +219,10 @@ class SqliteDbStore implements DbStore {
   Future<void> updateHistoryReadIndex(int gid, int index) async {
     // Ensure a row exists before updating, so progress is saved even when
     // the gallery was opened from downloads without visiting the detail page.
-    await _database.insert(
-      'gallery_history',
-      {'gid': gid, 'lastReadIndex': index},
-      conflictAlgorithm: ConflictAlgorithm.ignore,
-    );
+    await _database.insert('gallery_history', {
+      'gid': gid,
+      'lastReadIndex': index,
+    }, conflictAlgorithm: ConflictAlgorithm.ignore);
     await _database.update(
       'gallery_history',
       {'lastReadIndex': index},
@@ -464,22 +465,25 @@ class SqliteDbStore implements DbStore {
       }
       if ((translateName == null || translateName.isEmpty) && type != null) {
         final ns = (type == 'tag' || type == 'category') ? null : type;
-        translateName =
-            (await findTagTranslateAsync(name, namespace: ns))
-                ?.translateNameNotMD;
+        translateName = (await findTagTranslateAsync(
+          name,
+          namespace: ns,
+        ))?.translateNameNotMD;
         if (i % 4 == 3) {
           await Future<void>.delayed(Duration.zero);
         }
       }
 
-      await putNhTag(NhTag(
-        id: tag.id!,
-        name: name,
-        type: type ?? existing?.type,
-        count: tag.count ?? existing?.count,
-        translateName: translateName,
-        lastUseTime: existing?.lastUseTime ?? 0,
-      ));
+      await putNhTag(
+        NhTag(
+          id: tag.id!,
+          name: name,
+          type: type ?? existing?.type,
+          count: tag.count ?? existing?.count,
+          translateName: translateName,
+          lastUseTime: existing?.lastUseTime ?? 0,
+        ),
+      );
     }
   }
 
@@ -504,11 +508,7 @@ class SqliteDbStore implements DbStore {
 
   @override
   Future<void> deleteDownloadTask(int gid) async {
-    await _database.delete(
-      'download_task',
-      where: 'gid = ?',
-      whereArgs: [gid],
-    );
+    await _database.delete('download_task', where: 'gid = ?', whereArgs: [gid]);
   }
 
   @override
@@ -530,42 +530,42 @@ class SqliteDbStore implements DbStore {
   // ---------------------------------------------------------------------------
 
   static Map<String, dynamic> _historyToMap(GalleryHistory h) => {
-        'gid': h.gid,
-        'mediaId': h.mediaId,
-        'csrfToken': h.csrfToken,
-        'title': h.title,
-        'japaneseTitle': h.japaneseTitle,
-        'url': h.url,
-        'thumbUrl': h.thumbUrl,
-        'coverImgHeight': h.coverImgHeight,
-        'coverImgWidth': h.coverImgWidth,
-        'lastReadTime': h.lastReadTime,
-        'lastReadIndex': h.lastReadIndex,
-      };
+    'gid': h.gid,
+    'mediaId': h.mediaId,
+    'csrfToken': h.csrfToken,
+    'title': h.title,
+    'japaneseTitle': h.japaneseTitle,
+    'url': h.url,
+    'thumbUrl': h.thumbUrl,
+    'coverImgHeight': h.coverImgHeight,
+    'coverImgWidth': h.coverImgWidth,
+    'lastReadTime': h.lastReadTime,
+    'lastReadIndex': h.lastReadIndex,
+  };
 
   static GalleryHistory _mapToHistory(Map<String, dynamic> d) => GalleryHistory(
-        gid: (d['gid'] as num).toInt(),
-        mediaId: d['mediaId'] as String?,
-        csrfToken: d['csrfToken'] as String?,
-        title: d['title'] as String?,
-        japaneseTitle: d['japaneseTitle'] as String?,
-        url: d['url'] as String?,
-        thumbUrl: d['thumbUrl'] as String?,
-        coverImgHeight: (d['coverImgHeight'] as num?)?.toInt(),
-        coverImgWidth: (d['coverImgWidth'] as num?)?.toInt(),
-        lastReadTime: (d['lastReadTime'] as num?)?.toInt(),
-        lastReadIndex: (d['lastReadIndex'] as num?)?.toInt(),
-      );
+    gid: (d['gid'] as num).toInt(),
+    mediaId: d['mediaId'] as String?,
+    csrfToken: d['csrfToken'] as String?,
+    title: d['title'] as String?,
+    japaneseTitle: d['japaneseTitle'] as String?,
+    url: d['url'] as String?,
+    thumbUrl: d['thumbUrl'] as String?,
+    coverImgHeight: (d['coverImgHeight'] as num?)?.toInt(),
+    coverImgWidth: (d['coverImgWidth'] as num?)?.toInt(),
+    lastReadTime: (d['lastReadTime'] as num?)?.toInt(),
+    lastReadIndex: (d['lastReadIndex'] as num?)?.toInt(),
+  );
 
   static Map<String, dynamic> _tagTranslateToMap(TagTranslate t) => {
-        'id': t.id,
-        'namespace': t.namespace,
-        'name': t.name,
-        'translateName': t.translateName,
-        'intro': t.intro,
-        'links': t.links,
-        'lastUseTime': t.lastUseTime,
-      };
+    'id': t.id,
+    'namespace': t.namespace,
+    'name': t.name,
+    'translateName': t.translateName,
+    'intro': t.intro,
+    'links': t.links,
+    'lastUseTime': t.lastUseTime,
+  };
 
   static TagTranslate _mapToTagTranslate(Map<String, dynamic> d) =>
       TagTranslate(
@@ -579,20 +579,20 @@ class SqliteDbStore implements DbStore {
       );
 
   static Map<String, dynamic> _nhTagToMap(NhTag t) => {
-        'id': t.id,
-        'name': t.name,
-        'type': t.type,
-        'count': t.count,
-        'translateName': t.translateName,
-        'lastUseTime': t.lastUseTime,
-      };
+    'id': t.id,
+    'name': t.name,
+    'type': t.type,
+    'count': t.count,
+    'translateName': t.translateName,
+    'lastUseTime': t.lastUseTime,
+  };
 
   static NhTag _mapToNhTag(Map<String, dynamic> d) => NhTag(
-        id: (d['id'] as num).toInt(),
-        name: d['name'] as String?,
-        type: d['type'] as String?,
-        count: (d['count'] as num?)?.toInt(),
-        translateName: d['translateName'] as String?,
-        lastUseTime: (d['lastUseTime'] as num?)?.toInt() ?? 0,
-      );
+    id: (d['id'] as num).toInt(),
+    name: d['name'] as String?,
+    type: d['type'] as String?,
+    count: (d['count'] as num?)?.toInt(),
+    translateName: d['translateName'] as String?,
+    lastUseTime: (d['lastUseTime'] as num?)?.toInt() ?? 0,
+  );
 }

@@ -183,7 +183,9 @@ class GalleryNotifier extends _$GalleryNotifier {
           numFavorites: numFavorite ?? state.numFavorites,
         );
         showSimpleToast(
-          isFavorite ? L10n.current.favorite_added : L10n.current.favorite_removed,
+          isFavorite
+              ? L10n.current.favorite_added
+              : L10n.current.favorite_removed,
         );
       } else {
         // API returned success but no favorited field — refresh to confirm.

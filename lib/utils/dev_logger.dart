@@ -31,8 +31,7 @@ void _appendLine(String line) {
   final f = _logFile;
   if (f == null) return;
   try {
-    f.writeAsStringSync('$line\n',
-        mode: FileMode.writeOnlyAppend, flush: true);
+    f.writeAsStringSync('$line\n', mode: FileMode.writeOnlyAppend, flush: true);
   } catch (e) {
     // Swallow — logging failure must not break the app.
     debugPrint('[DevLogger] write failed: $e');
@@ -64,8 +63,11 @@ void writeLines(Iterable<String> lines, {String name = 'app'}) {
       ..writeln(line);
   }
   try {
-    _logFile!.writeAsStringSync(buf.toString(),
-        mode: FileMode.writeOnlyAppend, flush: true);
+    _logFile!.writeAsStringSync(
+      buf.toString(),
+      mode: FileMode.writeOnlyAppend,
+      flush: true,
+    );
   } catch (e) {
     debugPrint('[DevLogger] writeLines failed: $e');
   }

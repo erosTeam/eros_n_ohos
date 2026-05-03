@@ -14,26 +14,26 @@ class DownloadTask {
     this.status = DownloadStatus.pending,
     List<String>? pageExts,
     int? createdAt,
-  })  : pageExts = pageExts ?? [],
-        createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch;
+  }) : pageExts = pageExts ?? [],
+       createdAt = createdAt ?? DateTime.now().millisecondsSinceEpoch;
 
   factory DownloadTask.fromMap(Map<String, dynamic> m) => DownloadTask(
-        gid: (m['gid'] as num).toInt(),
-        title: m['title'] as String? ?? '',
-        thumbUrl: m['thumbUrl'] as String? ?? '',
-        mediaId: m['mediaId'] as String? ?? '',
-        totalPages: (m['totalPages'] as num?)?.toInt() ?? 0,
-        downloadedPages: (m['downloadedPages'] as num?)?.toInt() ?? 0,
-        status: DownloadStatus.values.firstWhere(
-          (s) => s.name == m['status'],
-          orElse: () => DownloadStatus.pending,
-        ),
-        savedDir: m['savedDir'] as String? ?? '',
-        pageExts: List<String>.from(
-          jsonDecode(m['pageExts'] as String? ?? '[]') as List,
-        ),
-        createdAt: (m['createdAt'] as num?)?.toInt(),
-      );
+    gid: (m['gid'] as num).toInt(),
+    title: m['title'] as String? ?? '',
+    thumbUrl: m['thumbUrl'] as String? ?? '',
+    mediaId: m['mediaId'] as String? ?? '',
+    totalPages: (m['totalPages'] as num?)?.toInt() ?? 0,
+    downloadedPages: (m['downloadedPages'] as num?)?.toInt() ?? 0,
+    status: DownloadStatus.values.firstWhere(
+      (s) => s.name == m['status'],
+      orElse: () => DownloadStatus.pending,
+    ),
+    savedDir: m['savedDir'] as String? ?? '',
+    pageExts: List<String>.from(
+      jsonDecode(m['pageExts'] as String? ?? '[]') as List,
+    ),
+    createdAt: (m['createdAt'] as num?)?.toInt(),
+  );
 
   final int gid;
   final String title;
@@ -66,15 +66,15 @@ class DownloadTask {
   }
 
   Map<String, dynamic> toMap() => {
-        'gid': gid,
-        'title': title,
-        'thumbUrl': thumbUrl,
-        'mediaId': mediaId,
-        'totalPages': totalPages,
-        'downloadedPages': downloadedPages,
-        'status': status.name,
-        'savedDir': savedDir,
-        'pageExts': jsonEncode(pageExts),
-        'createdAt': createdAt,
-      };
+    'gid': gid,
+    'title': title,
+    'thumbUrl': thumbUrl,
+    'mediaId': mediaId,
+    'totalPages': totalPages,
+    'downloadedPages': downloadedPages,
+    'status': status.name,
+    'savedDir': savedDir,
+    'pageExts': jsonEncode(pageExts),
+    'createdAt': createdAt,
+  };
 }
