@@ -92,6 +92,8 @@ dependencies:
   crypto: ^3.0.0
   liquid_glass_widgets: ^0.8.4
   meta: any
+  dart_openai: ^6.1.1
+  translator: ^1.0.4
 dev_dependencies:
   # Code generation tools removed in ohos fork — generated files are committed.
   # Run `flutter pub run build_runner build` in the main project (eros_n) instead.
