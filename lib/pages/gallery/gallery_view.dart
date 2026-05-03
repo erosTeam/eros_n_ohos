@@ -202,7 +202,8 @@ class GalleryPageBody extends HookConsumerWidget {
         actions: glass
             ? [
                 GlassIconButton(
-                  icon: Icon(Icons.share,
+                  icon: Icon(Icons.ios_share,
+                      size: 22,
                       color: glassIconColor(context)),
                   onPressed: () {
                     final shareText =
@@ -256,7 +257,7 @@ class GalleryPageBody extends HookConsumerWidget {
               ]
             : [
                 IconButton(
-                  icon: const Icon(Icons.share),
+                  icon: const Icon(Icons.ios_share, size: 22),
                   onPressed: () {
                     final shareText =
                         'title:${title.englishTitle}\n$url';
