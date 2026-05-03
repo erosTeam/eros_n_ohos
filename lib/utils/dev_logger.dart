@@ -13,7 +13,9 @@ const String _ohosLogPath = '/data/storage/el2/base/haps/entry/files/debug.log';
 File? _logFile;
 
 Future<void> initDevLogger() async {
-  if (!kDebugMode) return;
+  if (!kDebugMode) {
+    return;
+  }
   try {
     final file = File(_ohosLogPath);
     await file.parent.create(recursive: true);
@@ -29,7 +31,9 @@ Future<void> initDevLogger() async {
 
 void _appendLine(String line) {
   final f = _logFile;
-  if (f == null) return;
+  if (f == null) {
+    return;
+  }
   try {
     f.writeAsStringSync('$line\n', mode: FileMode.writeOnlyAppend, flush: true);
   } catch (e) {
@@ -39,7 +43,9 @@ void _appendLine(String line) {
 }
 
 void log(String message, {String name = 'app'}) {
-  if (!kDebugMode) return;
+  if (!kDebugMode) {
+    return;
+  }
   final ts = DateTime.now().toIso8601String().substring(11, 23); // HH:mm:ss.mmm
   final line = '$ts [$name] $message';
   // dart:developer -> DevTools Logging tab (works if DevTools is connected)
@@ -51,7 +57,9 @@ void log(String message, {String name = 'app'}) {
 /// bridge so that pretty-printed multi-line output stays grouped.
 /// No-op when the sink isn't open (e.g. on non-OHOS platforms).
 void writeLines(Iterable<String> lines, {String name = 'app'}) {
-  if (!kDebugMode || _logFile == null) return;
+  if (!kDebugMode || _logFile == null) {
+    return;
+  }
   final ts = DateTime.now().toIso8601String().substring(11, 23);
   final buf = StringBuffer();
   for (final line in lines) {

@@ -104,7 +104,9 @@ class GalleryNotifier extends _$GalleryNotifier {
     logger.d('url ${state.url}');
     try {
       final gallery = await getGalleryDetail(url: state.url, refresh: refresh);
-      if (!ref.mounted) return;
+      if (!ref.mounted) {
+        return;
+      }
       state = gallery.copyWith(
         mediaId: gallery.mediaId ?? state.mediaId,
         currentPageIndex: state.currentPageIndex,
@@ -120,14 +122,18 @@ class GalleryNotifier extends _$GalleryNotifier {
       }
     }
 
-    if (!ref.mounted) return;
+    if (!ref.mounted) {
+      return;
+    }
     logger.d('url ${state.url}');
     try {
       final comments = await getGalleryComments(
         gid: state.gid,
         refresh: refresh,
       );
-      if (!ref.mounted) return;
+      if (!ref.mounted) {
+        return;
+      }
       state = state.copyWith(comments: comments);
     } on HttpException {
       rethrow;
@@ -139,7 +145,9 @@ class GalleryNotifier extends _$GalleryNotifier {
       }
     }
 
-    if (!ref.mounted) return;
+    if (!ref.mounted) {
+      return;
+    }
     // Resolve real favorite state via API. The SvelteKit detail HTML carries
     // no session info, so the parser leaves `isFavorited` as null and we fill
     // it in here. Best-effort: a failure just leaves the heart hollow.
@@ -149,7 +157,9 @@ class GalleryNotifier extends _$GalleryNotifier {
   Future<void> _refreshFavoriteStatus() async {
     try {
       final fav = await getGalleryFavoriteStatus(gid: state.gid);
-      if (!ref.mounted) return;
+      if (!ref.mounted) {
+        return;
+      }
       if (fav != null && fav != state.isFavorited) {
         state = state.copyWith(isFavorited: fav);
       }
@@ -161,7 +171,9 @@ class GalleryNotifier extends _$GalleryNotifier {
   bool _favoriteLoading = false;
 
   Future<void> toggleFavorite() async {
-    if (_favoriteLoading) return;
+    if (_favoriteLoading) {
+      return;
+    }
     _favoriteLoading = true;
     try {
       final csrf = state.csrfToken ?? await getCsrfTokenFromCookie();

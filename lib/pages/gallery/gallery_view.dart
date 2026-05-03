@@ -219,6 +219,7 @@ class GalleryPageBody extends HookConsumerWidget {
                   onPressed: () {
                     final shareText = 'title:${title.englishTitle}\n$url';
                     logger.d(shareText);
+                    // ignore: deprecated_member_use
                     Share.share(shareText);
                   },
                   size: 36,
@@ -272,6 +273,7 @@ class GalleryPageBody extends HookConsumerWidget {
                   onPressed: () {
                     final shareText = 'title:${title.englishTitle}\n$url';
                     logger.d(shareText);
+                    // ignore: deprecated_member_use
                     Share.share(shareText);
                   },
                 ),
@@ -1060,7 +1062,9 @@ class ThumbListView extends HookConsumerWidget {
                   ? null
                   : (image.imageUrl ??
                         'https://t.nhentai.net/galleries/$mediaId/${index + 1}t.$ext');
-              if (builtUrl == null) return const SizedBox.shrink();
+              if (builtUrl == null) {
+                return const SizedBox.shrink();
+              }
               return Consumer(
                 child: GestureDetector(
                   onTap: () async {
@@ -1464,6 +1468,7 @@ class ToolBarView extends HookConsumerWidget {
                           '${gallery.gid}',
                         ),
                       );
+                      // ignore: deprecated_member_use
                       Share.shareXFiles([XFile(savePath)]);
                     } catch (e) {
                       logger.e('torrent download failed', error: e);

@@ -2,12 +2,12 @@ import 'dart:io';
 import 'dart:math';
 
 import 'package:eros_n/store/db/entity/tag_translate.dart';
-import 'package:eros_n/store/db/objectbox_helper.dart';
+import 'package:eros_n/store/db/sqlite_db_store.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Directory _tmpDir() {
   return Directory(
-    '${Directory.systemTemp.path}/objectbox_test_${Random().nextInt(999999)}',
+    '${Directory.systemTemp.path}/sqlite_test_${Random().nextInt(999999)}',
   );
 }
 
@@ -24,26 +24,26 @@ TagTranslate _makeTag({
 );
 
 void main() {
-  late ObjectBoxHelper helper;
+  late SqliteDbStore store;
   late Directory dir;
 
   setUp(() async {
     dir = _tmpDir();
     dir.createSync(recursive: true);
-    helper = ObjectBoxHelper();
-    await helper.init(path: dir.path);
+    store = SqliteDbStore();
+    await store.init(path: dir.path);
   });
 
   tearDown(() {
-    helper.close();
+    store.close();
     if (dir.existsSync()) {
       dir.deleteSync(recursive: true);
     }
   });
 
   group('TagTranslate CRUD', () {
-    test('findTagTranslate returns null when store is empty', () {
-      expect(helper.findTagTranslate('nonexistent'), isNull);
+    test('findTagTranslateAsync returns null when store is empty', () async {
+      expect(await store.findTagTranslateAsync('nonexistent'), isNull);
     });
 
     test('putAllTagTranslate persists multiple tags', () async {
@@ -52,28 +52,31 @@ void main() {
         _makeTag(name: 'glasses', namespace: 'tag', translateName: '眼鏡'),
         _makeTag(name: 'naruto', namespace: 'parody', translateName: '火影忍者'),
       ];
-      await helper.putAllTagTranslate(tags);
-      final namespaces = await helper.findAllTagNamespace();
+      await store.putAllTagTranslate(tags);
+      final namespaces = await store.findAllTagNamespace();
       expect(namespaces, containsAll(['tag', 'parody']));
     });
 
-    test('findTagTranslate finds by name and namespace', () async {
-      await helper.putAllTagTranslate([
+    test('findTagTranslateAsync finds by name and namespace', () async {
+      await store.putAllTagTranslate([
         _makeTag(name: 'glasses', namespace: 'tag', translateName: '眼鏡'),
       ]);
-      final result = helper.findTagTranslate('glasses', namespace: 'tag');
+      final result = await store.findTagTranslateAsync(
+        'glasses',
+        namespace: 'tag',
+      );
       expect(result, isNotNull);
       expect(result!.translateName, '眼鏡');
     });
 
     test(
-      'findTagTranslate excludes rows namespace when no namespace given',
+      'findTagTranslateAsync excludes rows namespace when no namespace given',
       () async {
-        await helper.putAllTagTranslate([
+        await store.putAllTagTranslate([
           _makeTag(name: 'glasses', namespace: 'tag'),
           _makeTag(name: 'glasses', namespace: 'rows'),
         ]);
-        final result = helper.findTagTranslate('glasses');
+        final result = await store.findTagTranslateAsync('glasses');
         expect(result, isNotNull);
         expect(result!.namespace, isNot('rows'));
       },
@@ -82,51 +85,52 @@ void main() {
     test(
       'putAllTagTranslate upserts by name+namespace composite key',
       () async {
-        await helper.putAllTagTranslate([
+        await store.putAllTagTranslate([
           _makeTag(
             name: 'glasses',
             namespace: 'tag',
             translateName: 'Original',
           ),
         ]);
-        // Put same name+namespace again with updated translation
-        await helper.putAllTagTranslate([
+        await store.putAllTagTranslate([
           _makeTag(name: 'glasses', namespace: 'tag', translateName: 'Updated'),
         ]);
-        final result = helper.findTagTranslate('glasses', namespace: 'tag');
+        final result = await store.findTagTranslateAsync(
+          'glasses',
+          namespace: 'tag',
+        );
         expect(result!.translateName, 'Updated');
-        // Should still be one record (upsert, not duplicate)
-        final all = await helper.findTagTranslateContains('glasses', 10);
+        final all = await store.findTagTranslateContains('glasses', 10);
         expect(all.length, 1);
       },
     );
 
     test('findTagTranslateContains matches by name', () async {
-      await helper.putAllTagTranslate([
+      await store.putAllTagTranslate([
         _makeTag(name: 'full color', namespace: 'tag'),
         _makeTag(name: 'glasses', namespace: 'tag'),
       ]);
-      final results = await helper.findTagTranslateContains('color', 10);
+      final results = await store.findTagTranslateContains('color', 10);
       expect(results.length, 1);
       expect(results.first.name, 'full color');
     });
 
     test('findTagTranslateContains matches by translateName', () async {
-      await helper.putAllTagTranslate([
+      await store.putAllTagTranslate([
         _makeTag(name: 'full color', namespace: 'tag', translateName: '全彩'),
         _makeTag(name: 'glasses', namespace: 'tag', translateName: '眼鏡'),
       ]);
-      final results = await helper.findTagTranslateContains('全', 10);
+      final results = await store.findTagTranslateContains('全', 10);
       expect(results.length, 1);
       expect(results.first.name, 'full color');
     });
 
     test('findTagTranslateContains excludes rows namespace', () async {
-      await helper.putAllTagTranslate([
+      await store.putAllTagTranslate([
         _makeTag(name: 'test', namespace: 'tag'),
         _makeTag(name: 'test', namespace: 'rows'),
       ]);
-      final results = await helper.findTagTranslateContains('test', 10);
+      final results = await store.findTagTranslateContains('test', 10);
       expect(results.every((t) => t.namespace != 'rows'), isTrue);
     });
 
@@ -135,28 +139,28 @@ void main() {
         10,
         (i) => _makeTag(name: 'tag$i', namespace: 'tag'),
       );
-      await helper.putAllTagTranslate(tags);
-      final results = await helper.findTagTranslateContains('tag', 3);
+      await store.putAllTagTranslate(tags);
+      final results = await store.findTagTranslateContains('tag', 3);
       expect(results.length, lessThanOrEqualTo(3));
     });
 
     test('deleteAllTagTranslate clears all records', () async {
-      await helper.putAllTagTranslate([
+      await store.putAllTagTranslate([
         _makeTag(name: 'a', namespace: 'tag'),
         _makeTag(name: 'b', namespace: 'parody'),
       ]);
-      await helper.deleteAllTagTranslate();
-      final results = await helper.findTagTranslateContains('', 100);
+      await store.deleteAllTagTranslate();
+      final results = await store.findTagTranslateContains('', 100);
       expect(results, isEmpty);
     });
 
     test('findAllTagNamespace returns distinct namespaces', () async {
-      await helper.putAllTagTranslate([
+      await store.putAllTagTranslate([
         _makeTag(name: 'a', namespace: 'tag'),
         _makeTag(name: 'b', namespace: 'tag'),
         _makeTag(name: 'c', namespace: 'parody'),
       ]);
-      final namespaces = await helper.findAllTagNamespace();
+      final namespaces = await store.findAllTagNamespace();
       expect(namespaces.toSet(), {'tag', 'parody'});
     });
 

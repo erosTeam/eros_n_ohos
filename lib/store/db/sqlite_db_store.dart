@@ -321,13 +321,17 @@ class SqliteDbStore implements DbStore {
     List<String> names, {
     String? namespace,
   }) async {
-    if (names.isEmpty) return {};
+    if (names.isEmpty) {
+      return {};
+    }
     final cleaned = names
         .map((n) => n.contains('|') ? n.split('|').first.trim() : n)
         .where((n) => n.isNotEmpty)
         .toSet()
         .toList();
-    if (cleaned.isEmpty) return {};
+    if (cleaned.isEmpty) {
+      return {};
+    }
     final placeholders = List.filled(cleaned.length, '?').join(',');
     var sql =
         "SELECT * FROM tag_translate WHERE name IN ($placeholders) AND namespace != 'rows'";
@@ -388,7 +392,9 @@ class SqliteDbStore implements DbStore {
 
   @override
   Future<Map<int, NhTag>> findNhTagsByIds(List<int> ids) async {
-    if (ids.isEmpty) return {};
+    if (ids.isEmpty) {
+      return {};
+    }
     final placeholders = List.filled(ids.length, '?').join(',');
     final rows = await _database.rawQuery(
       'SELECT * FROM nh_tag WHERE id IN ($placeholders)',
