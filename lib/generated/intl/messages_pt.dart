@@ -230,7 +230,7 @@ class MessageLookup extends MessageLookupByLibrary {
     ),
     "password": MessageLookupByLibrary.simpleMessage("Senha"),
     "pinch_to_zoom_hint": MessageLookupByLibrary.simpleMessage(
-      "Você também pode usar pinça para ajustar na página",
+      "Você também pode pinçar para ajustar na página",
     ),
     "please_login_first": MessageLookupByLibrary.simpleMessage(
       "Faça login primeiro",

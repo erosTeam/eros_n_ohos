@@ -122,7 +122,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "custom_layout_width": MessageLookupByLibrary.simpleMessage(
       "Пользовательская ширина макета",
     ),
-    "custom_provider": MessageLookupByLibrary.simpleMessage("Свой провайдер"),
+    "custom_provider": MessageLookupByLibrary.simpleMessage("Другой"),
     "dark": MessageLookupByLibrary.simpleMessage("Тёмная"),
     "delete": MessageLookupByLibrary.simpleMessage("Удалить"),
     "deny": MessageLookupByLibrary.simpleMessage("Отклонить"),

@@ -118,7 +118,7 @@ class MessageLookup extends MessageLookupByLibrary {
       "다운로드 삭제",
     ),
     "download_failed": MessageLookupByLibrary.simpleMessage("다운로드 실패"),
-    "download_management": MessageLookupByLibrary.simpleMessage("다운로드"),
+    "download_management": MessageLookupByLibrary.simpleMessage("다운로드 관리"),
     "download_path": MessageLookupByLibrary.simpleMessage("다운로드 경로"),
     "download_paused": MessageLookupByLibrary.simpleMessage("일시정지"),
     "download_pending": MessageLookupByLibrary.simpleMessage("대기 중"),

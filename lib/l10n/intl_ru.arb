@@ -185,7 +185,7 @@
   "translation_cache_entries": "{count} сохранённых переводов",
   "@translation_cache_entries": { "placeholders": { "count": {} } },
   "translation_cache_cleared": "Кэш переводов очищен",
-  "custom_provider": "Свой провайдер",
+  "custom_provider": "Другой",
   "security_challenge": "Проверка безопасности",
   "logout_confirm": "Вы уверены, что хотите выйти?",
   "cover_blur_tip": "Размывать обложку в списке",

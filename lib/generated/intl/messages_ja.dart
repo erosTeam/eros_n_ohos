@@ -173,7 +173,7 @@ class MessageLookup extends MessageLookupByLibrary {
     "max_concurrent_pages": MessageLookupByLibrary.simpleMessage(
       "ギャラリーあたりのページ数",
     ),
-    "more": MessageLookupByLibrary.simpleMessage("もっと見る"),
+    "more": MessageLookupByLibrary.simpleMessage("その他"),
     "more_like_this": MessageLookupByLibrary.simpleMessage("類似作品"),
     "never": MessageLookupByLibrary.simpleMessage("しない"),
     "newest": MessageLookupByLibrary.simpleMessage("新着"),

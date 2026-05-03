@@ -60,7 +60,7 @@ class SettingsPage extends ConsumerWidget {
           ListTile(
             iconColor: Theme.of(context).colorScheme.primary,
             leading: const Icon(Icons.download_outlined),
-            title: const Text('下载'),
+            title: Text(L10n.of(context).download),
             onTap: () {
               erosRouter.push(const DownloadSettingRoute());
             },
