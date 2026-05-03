@@ -93,6 +93,46 @@ class HiddenWebViewProxy {
     _controller = null;
   }
 
+  Completer<void>? _refreshCompleter;
+
+  /// Reload the WebView's bootstrap page to pick up rotated cookies.
+  ///
+  /// Multiple callers hitting this concurrently share the same reload cycle.
+  /// Returns once the page has finished loading or [timeout] is exceeded.
+  Future<void> refreshSession({
+    Duration timeout = const Duration(seconds: 15),
+  }) async {
+    if (_refreshCompleter != null) {
+      return _refreshCompleter!.future;
+    }
+    final controller = _controller;
+    if (controller == null) {
+      return;
+    }
+
+    _refreshCompleter = Completer<void>();
+
+    try {
+      _ready = Completer<void>();
+      await controller.loadUrl(
+        urlRequest: URLRequest(url: WebUri('${NHConst.baseUrl}/')),
+      );
+      await ready.timeout(
+        timeout,
+        onTimeout: () {
+          logger.w('[WebViewProxy] refreshSession timed out after $timeout');
+        },
+      );
+    } catch (e) {
+      logger.e('[WebViewProxy] refreshSession error: $e');
+    } finally {
+      if (!_refreshCompleter!.isCompleted) {
+        _refreshCompleter!.complete();
+      }
+      _refreshCompleter = null;
+    }
+  }
+
   /// Read the freshest `access_token` from the WebView's `document.cookie`.
   /// Returns `null` if the WebView isn't ready or no token is found.
   Future<String?> getAccessToken() async {
@@ -423,19 +463,6 @@ try {
       'hasBody': hasBody,
     };
 
-    // On HarmonyOS, callAsyncJavaScript never returns results — use polling.
-    if (Platform.operatingSystem == 'ohos') {
-      return _requestBinaryViaPolling(
-        controller: controller,
-        url: url,
-        method: method.toUpperCase(),
-        headers: safeHeaders,
-        bodyString: bodyString,
-        hasBody: hasBody,
-        timeout: timeout,
-      );
-    }
-
     // Encode the response body to base64 chunk-by-chunk so we don't blow the
     // call stack via String.fromCharCode(...veryLongArray).
     const script = r'''
@@ -511,110 +538,6 @@ try {
       headers: headersMap,
       bytes: bytes,
     );
-  }
-
-  /// Polling-based alternative to [requestBinary] for HarmonyOS, where
-  /// callAsyncJavaScript never returns results.
-  Future<ProxyBinaryResponse> _requestBinaryViaPolling({
-    required InAppWebViewController controller,
-    required String url,
-    required String method,
-    required Map<String, String> headers,
-    required String? bodyString,
-    required bool hasBody,
-    required Duration timeout,
-  }) async {
-    final id = DateTime.now().microsecondsSinceEpoch.toString();
-    final headersJson = jsonEncode(headers);
-    final bodyJs = bodyString != null ? jsonEncode(bodyString) : 'null';
-
-    // Fire the fetch and store the base64-encoded result in a global.
-    final startScript =
-        '''
-(function() {
-  var hdr = $headersJson;
-  var init = { method: '$method', headers: hdr, credentials: 'include', redirect: 'follow', mode: 'cors', cache: 'no-store' };
-  ${hasBody ? "init.body = $bodyJs;" : ""}
-  window['__bproxy_$id'] = { done: false };
-  fetch('$url', init).then(function(resp) {
-    return resp.arrayBuffer().then(function(buf) {
-      var bytes = new Uint8Array(buf);
-      var bin = '';
-      var chunk = 0x8000;
-      for (var i = 0; i < bytes.length; i += chunk) {
-        bin += String.fromCharCode.apply(null, bytes.subarray(i, i + chunk));
-      }
-      var b64 = btoa(bin);
-      var ho = {};
-      resp.headers.forEach(function(v, k) { ho[k] = v; });
-      window['__bproxy_$id'] = { done: true, ok: true, status: resp.status, statusText: resp.statusText, url: resp.url, headers: ho, bodyB64: b64 };
-    });
-  }).catch(function(e) {
-    window['__bproxy_$id'] = { done: true, ok: false, error: String(e) };
-  });
-})();
-''';
-
-    await controller.evaluateJavascript(source: startScript);
-
-    // Poll until done, collecting the result in one shot. For images the
-    // base64 payload can be a few hundred KB — well within the WebView
-    // serialisation limit observed on HarmonyOS.
-    final stopwatch = Stopwatch()..start();
-    while (stopwatch.elapsed < timeout) {
-      await Future<void>.delayed(const Duration(milliseconds: 200));
-
-      final poll = await controller.evaluateJavascript(
-        source: "JSON.stringify(window['__bproxy_$id'] || {})",
-      );
-
-      if (poll == null || poll == '{}' || poll == 'null') {
-        continue;
-      }
-
-      Map<String, dynamic> result;
-      try {
-        final decoded = poll is String ? jsonDecode(poll) : poll;
-        result = (decoded is Map<String, dynamic>) ? decoded : {};
-      } catch (_) {
-        continue;
-      }
-
-      if (result['done'] != true) {
-        continue;
-      }
-
-      await controller.evaluateJavascript(
-        source: "delete window['__bproxy_$id'];",
-      );
-
-      if (result['ok'] != true) {
-        throw StateError(
-          'WebViewProxy binary fetch failed: ${result['error']}',
-        );
-      }
-
-      final headersMap = <String, String>{};
-      final headersAny = result['headers'];
-      if (headersAny is Map) {
-        headersAny.forEach((k, v) {
-          headersMap[k.toString()] = v?.toString() ?? '';
-        });
-      }
-
-      final b64 = (result['bodyB64'] as String?) ?? '';
-      final bytes = b64.isEmpty ? Uint8List(0) : base64Decode(b64);
-
-      return ProxyBinaryResponse(
-        status: (result['status'] as num).toInt(),
-        statusText: (result['statusText'] as String?) ?? '',
-        url: (result['url'] as String?) ?? url,
-        headers: headersMap,
-        bytes: bytes,
-      );
-    }
-
-    throw TimeoutException('WebViewProxy binary polling timed out', timeout);
   }
 
   /// Submit a login to nhentai entirely from inside the WebView. We
