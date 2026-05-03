@@ -1,6 +1,6 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
 
-part of 'settings_provider.dart';
+part of 'title_translation_provider.dart';
 
 // **************************************************************************
 // RiverpodGenerator
@@ -9,51 +9,52 @@ part of 'settings_provider.dart';
 // GENERATED CODE - DO NOT MODIFY BY HAND
 // ignore_for_file: type=lint, type=warning
 
-@ProviderFor(SettingsNotifier)
-final settingsProvider = SettingsNotifierProvider._();
+@ProviderFor(TitleTranslationNotifier)
+final titleTranslationProvider = TitleTranslationNotifierProvider._();
 
-final class SettingsNotifierProvider
-    extends $NotifierProvider<SettingsNotifier, Settings> {
-  SettingsNotifierProvider._()
+final class TitleTranslationNotifierProvider
+    extends $NotifierProvider<TitleTranslationNotifier, int> {
+  TitleTranslationNotifierProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
-        name: r'settingsProvider',
+        name: r'titleTranslationProvider',
         isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
 
   @override
-  String debugGetCreateSourceHash() => _$settingsNotifierHash();
+  String debugGetCreateSourceHash() => _$titleTranslationNotifierHash();
 
   @$internal
   @override
-  SettingsNotifier create() => SettingsNotifier();
+  TitleTranslationNotifier create() => TitleTranslationNotifier();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Settings value) {
+  Override overrideWithValue(int value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Settings>(value),
+      providerOverride: $SyncValueProvider<int>(value),
     );
   }
 }
 
-String _$settingsNotifierHash() => r'76750d98956301586fb799e87edcca07d08cc631';
+String _$titleTranslationNotifierHash() =>
+    r'bcd092f355922a14eb0dfbcd754652f0c6b34c93';
 
-abstract class _$SettingsNotifier extends $Notifier<Settings> {
-  Settings build();
+abstract class _$TitleTranslationNotifier extends $Notifier<int> {
+  int build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<Settings, Settings>;
+    final ref = this.ref as $Ref<int, int>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<Settings, Settings>,
-              Settings,
+              AnyNotifier<int, int>,
+              int,
               Object?,
               Object?
             >;

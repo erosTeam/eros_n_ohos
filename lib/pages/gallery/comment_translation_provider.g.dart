@@ -13,14 +13,14 @@ part of 'comment_translation_provider.dart';
 final commentTranslationProvider = CommentTranslationNotifierProvider._();
 
 final class CommentTranslationNotifierProvider
-    extends $NotifierProvider<CommentTranslationNotifier, Map<int, String>> {
+    extends $NotifierProvider<CommentTranslationNotifier, int> {
   CommentTranslationNotifierProvider._()
     : super(
         from: null,
         argument: null,
         retry: null,
         name: r'commentTranslationProvider',
-        isAutoDispose: true,
+        isAutoDispose: false,
         dependencies: null,
         $allTransitiveDependencies: null,
       );
@@ -33,29 +33,28 @@ final class CommentTranslationNotifierProvider
   CommentTranslationNotifier create() => CommentTranslationNotifier();
 
   /// {@macro riverpod.override_with_value}
-  Override overrideWithValue(Map<int, String> value) {
+  Override overrideWithValue(int value) {
     return $ProviderOverride(
       origin: this,
-      providerOverride: $SyncValueProvider<Map<int, String>>(value),
+      providerOverride: $SyncValueProvider<int>(value),
     );
   }
 }
 
 String _$commentTranslationNotifierHash() =>
-    r'31fdce8fb3538ca9f507b9147a18565ee2a46f9c';
+    r'bfe39bd3d0efa90ac3ca26b6f1e7d1b2781dac5a';
 
-abstract class _$CommentTranslationNotifier
-    extends $Notifier<Map<int, String>> {
-  Map<int, String> build();
+abstract class _$CommentTranslationNotifier extends $Notifier<int> {
+  int build();
   @$mustCallSuper
   @override
   void runBuild() {
-    final ref = this.ref as $Ref<Map<int, String>, Map<int, String>>;
+    final ref = this.ref as $Ref<int, int>;
     final element =
         ref.element
             as $ClassProviderElement<
-              AnyNotifier<Map<int, String>, Map<int, String>>,
-              Map<int, String>,
+              AnyNotifier<int, int>,
+              int,
               Object?,
               Object?
             >;

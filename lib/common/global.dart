@@ -9,6 +9,7 @@ import 'package:eros_n/store/db/db_store.dart';
 import 'package:eros_n/store/db/sqlite_db_store.dart';
 import 'package:eros_n/store/kv/hive.dart';
 import 'package:eros_n/utils/clipboard_helper.dart';
+import 'package:eros_n/utils/translation/translation_cache.dart';
 import 'package:eros_n/utils/logger.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart' as iaw;
@@ -140,6 +141,12 @@ class Global {
       await HiveHelper.init();
     } catch (e) {
       debugPrint('[Global] HiveHelper.init failed: $e');
+    }
+
+    try {
+      await TranslationCacheService.instance.init();
+    } catch (e) {
+      debugPrint('[Global] TranslationCacheService.init failed: $e');
     }
 
     try {
